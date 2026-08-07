@@ -3,10 +3,13 @@
 > 文档目的：让人或 agent 照着本文，从零搭起「Penguin 自动优化 GEAK 提示词资产」的闭环。
 > 文档状态：设计 + 步骤已就绪；标注为「待实现」的文件尚不存在，需按本文创建。
 > 事实标注：带 `文件:行号` 的结论均已在代码中核对（汇总见附录 B）；未标注者为设计决策。
-> 环境基线（已核对）：**8× AMD Instinct MI355X**、ROCm 7.2、torch 2.9.1+rocm7.2、Python 3.12、Node 24.19、pnpm 11.18、Claude Code 2.1.220。
+> 环境基线（已核对）：**8× AMD Instinct MI355X**、ROCm 7.2、torch 2.9.1+rocm7.2、Python 3.12、Node 24.19、pnpm 11.18、Claude Code 2.1.220、profiler 三件套齐全。
 
-**开工前必读**：§2.3 指出的 runner 缺口是整个项目的第一个阻塞项，§6 指出的 case 荒是第二个。
+**开工前必读**：§2.3 指出的 runner 缺口是整个项目的第一个阻塞项，§6.3 指出的 case 荒是第二个。
 这两件事不解决，后面所有步骤都无法执行。不要跳过。
+
+> 本文只描述**方案与步骤**。实际执行进度、验证结果、实测数据记录在
+> [`PENGUIN_OPTIMIZE_GEAK_PROGRESS.md`](PENGUIN_OPTIMIZE_GEAK_PROGRESS.md)。
 
 ---
 
@@ -83,6 +86,72 @@ Penguin (exec_command)
 
 **工期影响**：建这个 runner（含从 `run_e2e.py` 抽取公共 driver）是**数天**的活，不是几小时。
 这是阶段 1 的全部内容，必须先完成。
+
+**好消息**：启动机制已通过 `run_e2e.py --dry-run` 完全查明（§2.4），`run_kernel.py` 不再有猜测成分。
+
+### 2.4 GEAK Workflow 的确切启动机制（已实测查明）
+
+GEAK README 给人类的启动方式是交互式的：
+
+```bash
+IS_SANDBOX=1 claude --dangerously-skip-permissions
+# 然后自然语言：use <GEAK>/kernel_workflow to optimize <GEAK>/examples/tasks/knn
+```
+
+自动化路径则由 `interface/run_e2e.py` 封装。**以下每条都是坑，`run_kernel.py` 必须逐条照做**：
+
+| 事项 | 细节 | 出处 |
+|---|---|---|
+| **不能用 `--effort ultracode`** | 公开版 claude（≥2.1.x，含本机 2.1.220）**会拒绝**该参数。必须改用 `--settings` 注入 `{"enableWorkflows":true,"ultracode":true}`（最高优先级 flag settings 层） | `run_e2e.py:72-80` |
+| **SDK 会用自带 CLI** | `claude_agent_sdk` 优先驱动 `claude_agent_sdk/_bundled/claude` 而非 `$PATH` 里的，换系统 claude 无效，须显式覆盖 | `run_e2e.py:82-84` |
+| **Workflow 是后台任务** | Workflow 调用被路由成非阻塞后台任务，主 agent turn 几乎立刻结束，需保持 CLI 进程存活才能保住后台 workflow | `run_e2e.py:642-650` |
+| **`claude -p` 有 600s 后台等待上限** | 超时后**直接 terminate 后台 workflow**，且退出码仍是 0（静默腰斩）。GEAK 的 kernel_workflow 必然超过 10 分钟，所以这是致命的。解法：设 `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` 无限等待，或走 SDK 持久 client | **实测触发**，提示语出自 CLI |
+| **最终 JSON 的获取** | `run_e2e.py:89-95,651-656` 称后台路径不经 transcript 暴露返回值，须轮询磁盘 marker。**但实测**：只要 prompt 里明确要求 "print EXACTLY ONE final line of compact JSON"，CLI 路径**能在 transcript 末行拿到**完整返回值。两条路都要实现：末行解析为主，磁盘哨兵兜底 | `run_e2e.py` + 实测 |
+| **`workflow_return.json` 不会自动生成** | 即使 prompt 里写了兜底要求，agent 成功打印后就不再落盘。**`run_kernel.py` 必须自己写这个哨兵**，不能指望 agent 自觉 | 实测 |
+| **`claude -p` 会等 stdin 3 秒** | 输出里混入 `Warning: no stdin data received in 3s`。加 `< /dev/null` 显式跳过 | 实测 |
+| **args 必须是真 JSON 对象** | 若以 JSON 字符串传入，workflow 读不到 `args.workflow_dir` 会**立即中止** | prompt 内 CRITICAL 段 |
+| 允许的工具 | `["Workflow", "Bash", "Read", "Write"]` | `run_e2e.py:70` |
+| 默认模型 | `GEAK_CLAUDE_MODEL`，默认 `claude-opus-4-8` | `run_e2e.py:69` |
+| SDK 可选 | 本机**未安装** `claude_agent_sdk`，会走 `claude -p` CLI 回退路径 | 实测 |
+
+**prompt 模板**（`run_kernel.py` 照抄结构，替换 scriptPath 与 args）：
+
+```
+Invoke the Workflow tool exactly once with:
+  scriptPath: "<GEAK>/kernel_workflow/kernel_workflow.js"
+  args: {<真正的 JSON 对象>}
+CRITICAL: pass `args` as a real JSON OBJECT (a mapping), NOT as a JSON-encoded string.
+  If args arrives as a string the workflow cannot read args.workflow_dir and aborts immediately.
+<跑完整流水线的说明>
+The workflow persists its full return value to "<eval_dir>/workflow_return.json" as its final act;
+that file is the source of truth. When it finishes, print EXACTLY ONE final line of compact JSON
+that is the Workflow tool's full return value. If for ANY reason that file does not exist when the
+tool returns, write that exact return value there yourself with the Write tool before printing.
+Print nothing after the JSON line.
+```
+
+**「永远产出合法 result.json」的四层递降**（`run_e2e.md` 已给出成熟实现，直接复用）：
+
+1. 完整 transcript 捕获（不只取最后一条 assistant 文本）
+2. 扫描整个 transcript 提取最后一个含 `eval_dir` 的 JSON（容忍单行/```json``` 围栏/多行/尾随散文）
+3. 落盘哨兵 `<eval_dir>/workflow_return.json`
+4. 兜底从磁盘产物重建；重建的结果标记 `recovered_from_disk: true`
+
+**`kernel_workflow.js` 参数清单**（源码读出）：
+
+| 参数 | 默认 | 说明 |
+|---|---|---|
+| `kernel_path` | **必需** | kernel 目录绝对路径 |
+| `workflow_dir` | **必需** | 含 js/roles/knowledge/scripts 的目录 |
+| `budget` | 6 | 方向预算 |
+| `gpu_ids` | `'0'` | GPU 列表 |
+| `min_improve` | **0.02** | round winner 提交门槛 |
+| `deep_cost` | 2 | deep_explore 预算消耗（且独占一轮） |
+| `exp_root` | `<parent>/exp` | 运行产物根目录 |
+| `apply_to_original` | `false` | 是否回写原目录 |
+
+> **注意**：GEAK 自己的 `MIN_IMPROVE` 默认就是 **2%**，与本文 §6.5 独立定出的
+> `dev_suite_relative_gain_min: 0.02` 是同一量级。实测噪声是否支持该门槛，见进度文档。
 
 ---
 
@@ -250,7 +319,7 @@ Optimizer Session（LLM 负责：读证据、提假设、生成候选）
   │
   ├─ 5. Dev（5–10 case × 3 runs，配对交错）  ← 优化驱动信号
   │      每个 Evaluator：
-  │        gpu_lease.sh 取独占 GPU
+  │        gpu_lock.sh 取独占 GPU（+ workspace 级编译缓存隔离）
   │        → run_kernel.py 跑 GEAK
   │        → verify_engineer 产出 verified 加速比
   │        → score.sh 换算 0–100
@@ -385,19 +454,30 @@ wall_time_regression_limit: 0.20
 |---|---|---|
 | `interface/workflow_driver.py` | 从 `run_e2e.py` 抽取：Claude SDK 调用、`claude -p` 回退、Workflow 等待、timeout、进程清理、结果 JSON 解析、产物恢复、错误分类 | 数天 |
 | `interface/run_kernel.py` | single-kernel 非交互 runner（§2.3） | 同上 |
+| `interface/run_kernel.md` | 契约文档（照 `run_e2e.md` 写） | — |
 | `interface/test_run_kernel.py` | runner 的测试 | — |
-| `.penguin/gpu_lease.sh` | GPU 独占租约 | 1h |
 | `.penguin/score.sh` | verified 加速比 → 0–100 | 1h |
 
-`run_kernel.py` 计划调用形式：
+（GPU 独占**不新建脚本**，复用 GEAK 自带的 `kernel_workflow/scripts/gpu_lock.sh`，见 §8 阶段 3.1。）
+
+`run_kernel.py` 的调用契约 —— **照抄 `run_e2e.py` 的形式，用 JSON 文件而非命令行参数**
+（可版本化、参数多时不爆炸、便于程序化生成与留档）：
 
 ```bash
-python3 interface/run_kernel.py \
-  --kernel-path <case> --workflow-dir <candidate>/kernel_workflow \
-  --budget 6 --gpu-ids 0 --eval-dir <out> --result-json <out>/result.json
+python3 interface/run_kernel.py <handoff.json> <result.json> [--dry-run]
 ```
 
+| 退出码 | 含义 |
+|---|---|
+| `0` | `result.json.status` 为 `ok` 或 `no_gain` |
+| `1` | crash，`result.json.status == "error"` 且含 `error` 字段 |
+| `2` | 用法错误 / handoff 不可读 |
+
+`--dry-run` 打印映射后的 workflow args 与 prompt 后退出 0，**不做任何 GPU 工作** ——
+用它在 CI 里校验参数映射，也是集成期排障的第一手段。
+
 **无论成功、失败还是超时，都必须写出一个合法 `result.json`**，否则上层无法区分「跑挂了」和「没跑」。
+实现方式直接复用 §2.4 的四层递降（完整 transcript 捕获 → 扫描提取 → 落盘哨兵 → 磁盘重建）。
 
 结果协议建议至少包含：`schema_version`、`status`、`kernel_id`、`reference_geak_sha`、
 `candidate_geak_sha`、`verification{correctness_passed, validation_status, final_speedup, final_geomean}`、
@@ -465,7 +545,7 @@ expose_holdout_details_to_optimizer = false
 [resources]
 gpus          = 8
 gpus_per_case = 1
-lease_script  = ".penguin/gpu_lease.sh"
+gpu_lock      = "kernel_workflow/scripts/gpu_lock.sh"   # GEAK 自带，勿自行实现
 ```
 
 ### 7.5 Evaluator 返回的协议 YAML
@@ -514,9 +594,20 @@ session_id: <test_session_id>
 ```bash
 penguin --version    # 0.2.0
 node --version       # v24.19.0
-claude --version     # 2.1.220
-rocm-smi --showid | grep -c '^GPU\['   # 应为 8
+claude --version     # 需 >= 2.1.177（dynamic Workflow 特性）
+rocm-smi | tail -n +5 | grep -cE '^[0-9]'   # GPU 数量，应为 8
+        # 别用 `rocm-smi --showid | grep -c '^GPU\['`，它每卡多行会返回 40
+
+# GEAK README 要求的 profiler（三选一即可，缺失会让 profile_engineer 降级）
+for p in rocprof-compute rocprofv3 rocprof; do command -v $p || echo "$p 缺失"; done
+
+# 凭据（GEAK 内部要调 Claude，缺了 runner 建好也跑不了）
+printenv ANTHROPIC_API_KEY  >/dev/null && echo "API key 已设置"
+printenv ANTHROPIC_BASE_URL >/dev/null && echo "BASE_URL 已设置（走网关）"
 ```
+
+> `claude_agent_sdk` 是**可选**依赖（不在 GEAK 的 `pyproject.toml` 里）。装了走 SDK 路径
+> （transcript 捕获更完整），没装则回退 `claude -p` CLI，两条路都可用。
 
 改了 Penguin 的 TS 源码需 `pnpm build` 才生效（`penguin` 软链指向 `packages/cli/dist/index.js`）。
 
@@ -579,45 +670,155 @@ Holdout 的 case 清单建议存在 Optimizer 无权读取的路径。
 
 ### 阶段 3：写确定性脚本（1–2 天）
 
-**3.1 `.penguin/gpu_lease.sh`** —— 从 8 张卡取一张独占
+**3.0 ⚠️ 先解除容器的单卡限制，否则后面全是白费**
+
+本容器在 PID 1 层面注入了 `ROCR_VISIBLE_DEVICES=0`，**默认所有 ROCr/HIP 应用只能看到 1 张卡**。
+
+后果很隐蔽：`rocm-smi` 照常显示 8 张卡（它走 sysfs，不受 ROCr 约束），`gpu_lock.sh` 设置的
+`HIP_VISIBLE_DEVICES=<gpu_id>` 也不会报错 —— 但 **ROCr 层在更底层先把可见设备集砍成 1 张，
+HIP 层的分配被直接架空**。实测中 4 个 specialist engineer 因此全部挤在物理 GPU 0 上互抢，
+GEAK 日志报 `co-tenant noise (MaxNs up to ~500ms, huge StdDev)`。
+
+它只是个**可覆盖的默认值**，容器本身有全部 8 卡的访问权（实测 GPU 0/3/7 均可正常执行 matmul）。
+所以每个评测命令的**最外层**必须先解除：
 
 ```bash
-#!/usr/bin/env bash
-# 用法: gpu_lease.sh <command...>
-set -euo pipefail
-LEASE_DIR=/tmp/geak-gpu-leases
-mkdir -p "$LEASE_DIR"
-for gpu in 0 1 2 3 4 5 6 7; do
-  exec {fd}>"$LEASE_DIR/gpu$gpu.lock"
-  if flock -n "$fd"; then
-    export HIP_VISIBLE_DEVICES="$gpu"
-    exec "$@"
-  fi
-  exec {fd}>&-
-done
-echo "no free GPU" >&2; exit 75    # EX_TEMPFAIL
+unset ROCR_VISIBLE_DEVICES        # 或 export ROCR_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 ```
 
+验证方法：
+
+```bash
+python3 -c "import torch; print(torch.cuda.device_count())"   # 应为 8，不是 1
+```
+
+**顺序不能反**：先解除 ROCr 限制，再由 `gpu_lock.sh` 分配 `HIP_VISIBLE_DEVICES`。
+
+**`.bashrc` 只能解决一半**。`/root/.bashrc` 末尾已追加 `unset ROCR_VISIBLE_DEVICES`，
+但该文件第 6 行就是 `[ -z "$PS1" ] && return` —— **非交互式 shell 根本不读它**。实测：
+
+| 场景 | 结果 |
+|---|---|
+| 交互式 shell（人工进容器） | ✅ 已解除，`device_count = 8` |
+| 非交互式（脚本 / subprocess / `exec_command`） | ⚠️ 仍为 `0`，`device_count = 1` |
+
+而 `Penguin exec_command → run_kernel.py → claude → Workflow → GEAK` 整条链都是非交互式的。
+因此 **`run_kernel.py` 必须自己 unset，并且做启动前断言**：
+
+```python
+os.environ.pop("ROCR_VISIBLE_DEVICES", None)
+n = torch.cuda.device_count()
+assert n == EXPECTED_GPUS, f"只看到 {n} 张 GPU，期望 {EXPECTED_GPUS} —— 检查 ROCR_VISIBLE_DEVICES"
+```
+
+**断言比 unset 更重要**：这个故障是静默的（不报错、`rocm-smi` 照常显示 8 卡、只是噪声莫名变大），
+没有断言就只能在事后对着异常数据反查。
+
+**3.0b ⚠️ 必须跳过 rocprof-compute，否则每次 profile 白扔约 4 分钟**
+
+`rocprof-compute` 在本环境（ROCm 7.2 / rocprofiler-compute 3.4.0）**不可用**，且失败方式很贵：
+它会跑完 13 轮 counter replay（每轮完整执行一遍 benchmark）才失败，实测耗时 **3 分 44 秒**。
+GEAK 一次 run 会 profile 多次（baseline + 每轮 reprofile），再乘以评测矩阵，浪费相当可观。
+
+所有评测命令固定设置：
+
+```bash
+export PROFILER_PRIORITY="rocprofv3 rocprof"
+```
+
+`profile_kernel.sh:74-77` 的选择逻辑只按 `command -v` 取列表中第一个存在的 profiler，
+因此这样即可跳过；第 63 行会打印 `Profiler priority:`，可用于核验生效。
+
+**不要卸载 rocprof-compute** —— 它是 ROCm 包的一部分，删除破坏包完整性且不可逆；
+用这个官方 env 开关是可逆的，将来上游修好后去掉即可。
+
+失效根因与已定位的三处调用 bug 记录在进度文档，此处不展开。降级到 `rocprofv3` 后仍可获得
+durations、dispatch counts、per-dispatch occupancy（VGPR/SGPR/Scratch/LDS/grid），
+缺的只有 SoL / VALU / VMEM / HBM / cache-hit 计数器——GEAK 的 7.8× 就是在这种降级状态下取得的。
+
+**3.0c ⚠️ `rocm-smi` 与 HIP 的 GPU 编号顺序不一致 —— 指定卡号前必须建映射**
+
+两套编号用的是不同的枚举顺序，直接按 `rocm-smi` 的编号传 `gpu_ids` **可能跑到别人的卡上**。
+唯一可靠的关联键是 **PCI Bus ID**。
+
+本机实测映射（仅供参考，**换机器必须重测**）：
+
+| HIP / torch 索引 | PCI（十进制→十六进制） | = rocm-smi |
+|---|---|---|
+| cuda:0 | 117 → `0x75` | GPU[3] |
+| cuda:1 | 5 → `0x05` | GPU[0] |
+| cuda:2 | 101 → `0x65` | GPU[2] |
+| cuda:3 | 21 → `0x15` | GPU[1] |
+| cuda:4 | 245 → `0xF5` | GPU[7] |
+| cuda:5 | 133 → `0x85` | GPU[4] |
+| cuda:6 | 229 → `0xE5` | GPU[6] |
+| cuda:7 | 149 → `0x95` | GPU[5] |
+
+建映射与校验的方法：
+
+```bash
+rocm-smi --showbus                      # rocm-smi 索引 → PCI（十六进制）
+python3 -c "
+import torch
+for i in range(torch.cuda.device_count()):
+    print(i, hex(torch.cuda.get_device_properties(i).pci_bus_id))"   # HIP 索引 → PCI
+```
+
+**指定卡后必须回验**落到的物理卡是否都在允许范围内：
+
+```bash
+env -u ROCR_VISIBLE_DEVICES HIP_VISIBLE_DEVICES=4,5,6,7 python3 -c "
+import torch
+allowed = {0x85, 0x95, 0xE5, 0xF5}     # 本次获准使用的物理卡（rocm-smi 4-7）
+buses = [torch.cuda.get_device_properties(i).pci_bus_id for i in range(torch.cuda.device_count())]
+assert set(buses) <= allowed, f'越界: {[hex(b) for b in buses]}'
+print('✅ 全部在允许范围内')"
+```
+
+`gpu_lock.sh` 与 GEAK 的 `gpu_ids` 用的都是 **HIP 索引**，不是 rocm-smi 索引。
+
+**3.1 GPU 独占 —— 直接复用 GEAK 自带的 `kernel_workflow/scripts/gpu_lock.sh`，不要自己写**
+
+```bash
+cd <workspace> && bash <GEAK>/kernel_workflow/scripts/gpu_lock.sh <gpu_id> <command...>
+```
+
+它做了四件事，自己写的版本几乎必然只覆盖第一件：
+
+1. **flock per GPU id** —— 多个 engineer 安全共享 GPU（命令期间独占）
+2. **`TORCH_EXTENSIONS_DIR` 按 workspace 隔离** —— 否则 `cpp_extension.load(name=...)` 会把不同
+   engineer 的**不同源码**编进**同一个全局缓存**，既让并行编译串行化在一把全局锁上，
+   **又会让一个 engineer benchmark 到另一个 engineer 的 `.so`**（静默的正确性灾难）
+3. **`PYTORCH_ROCM_ARCH` 只设本机 arch** —— 环境默认常是 ~9 个架构的列表，编译慢约 9 倍且毫无收益。
+   同时固定 `GPU_ARCHS`，避免 aiter JIT 反复 shell 到 `rocm_agent_enumerator`
+4. **回收孤儿 `rocm_agent_enumerator` 进程** —— 注释记录了真实事故：GPU/KFD 竞争下这些进程会挂起堆积
+   （观察到 561 个 enumerator / 37k tasks 导致整机卡死）。只杀 `ppid==1` 且存活 >60s 的，不误伤
+
 > kernel benchmark 必须独占 GPU，否则测得的加速比不可信 —— 这是整套评分可信度的物理前提。
+> 第 2、3 条则是并行评测能否既快又正确的前提，**不要绕过这个 wrapper 直接跑测量命令**。
 
 **3.2 `.penguin/score.sh`** —— verified 加速比 → 0–100
+
+GEAK 返回值是**扁平结构**（实测确认），没有 `verification` 嵌套，也**没有 `correctness_passed` 字段** ——
+正确性隐含在 `validation_status` 里：
 
 ```bash
 #!/usr/bin/env bash
 # 用法: score.sh <result_json>
 set -euo pipefail
-python3 - "$1" <<'PY'
+python3 - "$1" "${SCORE_ANCHOR:?先按 baseline 校准，见下}" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1]))
-v = r.get("verification", {})
-if not v.get("correctness_passed"):
-    print("0.00"); sys.exit(0)          # 正确性不过 = 0 分，无条件
-if v.get("validation_status") != "accepted":
-    print("0.00"); sys.exit(0)          # Director 未通过 = 0 分
-s = float(v["final_speedup"])            # 只用 verified 数字
-pts = [(1.0,0),(1.5,60),(2.0,85),(2.5,100)]
-if s <= 1.0: out = 0.0
-elif s >= 2.5: out = 100.0
+anchor = float(sys.argv[2])              # baseline geomean，阶段 5 实测后填入
+
+if r.get("validation_status") != "accepted":
+    print("0.00"); sys.exit(0)           # Director 未接受 = 0 分，无条件
+
+s = float(r["final_speedup"])            # verified geomean，绝不用 tech_lead_reported_geomean
+# 相对 baseline 的分段线性：0.9x anchor→0, anchor→60, 1.15x anchor→85, 1.3x anchor→100
+pts = [(0.90*anchor,0),(anchor,60),(1.15*anchor,85),(1.30*anchor,100)]
+if s <= pts[0][0]: out = 0.0
+elif s >= pts[-1][0]: out = 100.0
 else:
     for (x0,y0),(x1,y1) in zip(pts, pts[1:]):
         if x0 <= s <= x1:
@@ -626,9 +827,20 @@ print(f"{out:.2f}")
 PY
 ```
 
-**两条硬规则**：正确性或 Director 验证不过 → 直接 0 分，不给部分分（否则 Optimizer 会学会牺牲正确性换速度）；
-只认 verified 数字，绝不用 engineer 自报值 —— `verify_engineer.md` 开头写明自报数字
-"may be noisy, measured against the wrong baseline, or wrong"。
+**三条硬规则**：
+
+1. `validation_status != "accepted"` → 直接 0 分，不给部分分（否则 Optimizer 会学会牺牲正确性换速度）
+2. 只认 `final_speedup`（verified geomean），**绝不用 `tech_lead_reported_geomean`** ——
+   实测两者差 2.2%（7.9729 自报 vs 7.7956 verified），`verify_engineer.md` 开头就写明自报数字
+   "may be noisy, measured against the wrong baseline, or wrong"
+3. **曲线必须按实测 baseline 校准，不能预设绝对值**
+
+> ⚠️ **第 3 条是踩过的坑**：本文初稿把曲线写死为「1.0x→0, 1.5x→60, 2.0x→85, ≥2.5x→100」。
+> 但实测 GEAK 在 knn 上单轮就做到 **7.8×** —— 用那条曲线的话**所有 candidate 都是满分 100**，
+> 评分完全失去区分度，优化循环直接失效。
+>
+> 正确做法：阶段 5 建完 Reference Baseline 后，取各 case 的 baseline geomean 作为 `anchor`，
+> 曲线围绕它展开（上面用的是相对锚点写法）。**不同 case 的 anchor 差异可能很大，应逐 case 设定。**
 
 **3.3 `gate.sh`** —— 静态门禁，按 §7.2 职责实现。核心是 protected paths 的哈希在候选应用前后都校验。
 
@@ -684,16 +896,41 @@ dev runs=3, holdout runs=3。最多 8 个有效 candidate 轮次。
 
 ## 9. 成本预期
 
-单次 GEAK run 按 20–40 分钟估算，8 卡并行：
+> ⚠️ **本节的估算比初稿悲观得多，因为初稿有一个错误假设。**
+> 初稿以为「8 卡 = 8 路 Evaluator 并行」，但**每个 Evaluator 内部跑的 GEAK 自己就要占多张卡**
+> （它的 specialist engineer 是并行的）。真实并行度 = `8 / 每个 GEAK run 分配的卡数`。
 
-| 环节 | 规模 | 耗时 |
+**实测锚点**：knn，`budget=2`，4 张卡，1 轮 → **29 分钟**，verified geomean 7.8×。
+
+并行度是一个**待实测的权衡**，两端差异很大：
+
+| 每 run 卡数 | 并行 Evaluator | 单 run 耗时 | 说明 |
+|---|---|---|---|
+| 1 | **8** | 慢 2–3×（engineer 全串行等锁） | 并行度高，总吞吐可能反而最优 |
+| 2 | 4 | 中 | |
+| 4 | **2** | 29 min（实测，budget=2） | 单 run 快但并行度低 |
+
+**总吞吐 ≈ 并行度 ÷ 单 run 耗时**，两端相乘后可能接近，必须实测才能定。
+建议在阶段 5 建 baseline 时顺便测出这条曲线。
+
+按 `budget=6`（约为 budget=2 的 2–3 倍耗时）粗估单个 candidate 的完整评测：
+
+| 环节 | 规模（runs） | 备注 |
 |---|---|---|
 | 静态门禁 | — | 秒级，零 GPU |
-| Canary | 2 case × 1 run = 2 | ~20 min |
-| Dev | 5 case × 3 runs × 2（配对交错含 Reference）= 30 | ~2–3 h |
-| Holdout | 5 case × 3 runs = 15 | ~1–1.5 h |
-| **单个 candidate（全通过）** | ~47 | **~4 h** |
-| **8 轮**（多数候选在 Canary 或 Dev 被拒） | — | **1–3 天** |
+| Canary | 2 | 快速崩坏筛查 |
+| Dev | 5 case × 3 runs × 2（配对交错含 Reference）= 30 | 大头 |
+| Holdout | 5 case × 3 runs = 15 | 仅 Dev 通过者 |
+| **合计** | **~47 runs** | |
+
+47 个 run × 单 run 1–1.5 小时 ÷ 并行度，**乐观（8 路）约 6–9 小时，悲观（2 路）超过 24 小时**。
+8 轮优化在悲观情形下会拖到 **一周以上**，这不可接受。
+
+**因此必须先做的取舍**（在阶段 5 用实测数据决定）：
+- 调低 GEAK `budget`（代价：GEAK 行为偏离真实使用场景）
+- 减少 Dev case 数或 runs 数（代价：噪声容忍度下降、覆盖变窄）
+- 提高并行度，每 run 只给 1 卡（代价：单 run 变慢，需实测总吞吐是否真的更好）
+- 缩短 case（选编译+benchmark 更快的 kernel）
 
 漏斗效应显著：被 `gate.sh` 拒的零成本，被 Canary 拒的只花 20 分钟。
 
@@ -736,7 +973,11 @@ dev runs=3, holdout runs=3。最多 8 个有效 candidate 轮次。
 | **归因失效** | 说不清改动来自哪 | editable 一次开 1 个文件；一轮一个 bounded candidate |
 | **污染** | 私有 rubric/holdout 进了 Optimizer 上下文 | 沿用污染检测，发生即停 |
 | **误改工作区** | 改坏日常 checkout | 专用分支 + worktree；最小 glob；哈希校验 |
-| **GPU 争抢** | 并发 benchmark 互相干扰 | `gpu_lease.sh` flock 独占 |
+| **GPU 争抢** | 并发 benchmark 互相干扰 | GEAK 自带 `gpu_lock.sh` flock 独占 |
+| **编译缓存串味** | engineer A 测到 engineer B 的 `.so` | `gpu_lock.sh` 的 `TORCH_EXTENSIONS_DIR` 按 workspace 隔离（勿绕过） |
+| **单卡限制被静默架空** | 传了多卡却全挤在 GPU 0，噪声暴涨且不报错 | 最外层 `unset ROCR_VISIBLE_DEVICES`（§8 阶段 3.0），并用 `device_count==8` 验证 |
+| **GPU 索引错位** | `rocm-smi` 与 HIP/torch 的编号顺序**不一致**，可能跑到别人的卡上 | 用 PCI Bus ID 建映射后再指定 `gpu_ids`（§8 阶段 3.0c） |
+| **profiler 空转** | 每次 profile 白扔约 4 分钟在注定失败的 rocprof-compute 上 | `PROFILER_PRIORITY="rocprofv3 rocprof"`（§8 阶段 3.0b） |
 | **环境漂移** | 与旧 Reference 不可比 | 环境指纹，关键项变则重建 Reference |
 
 ---
@@ -791,9 +1032,14 @@ kernel_workflow/roles/verify_engineer.md 79 信任锚点（protected）
 kernel_workflow/roles/profile_engineer.md 72 瓶颈分类
 kernel_workflow/roles/integrator.md      65 合并 patch
 kernel_workflow/knowledge/self_monitoring.md 92 ★阶段一目标
+kernel_workflow/scripts/gpu_lock.sh         ★GPU 锁 + 编译隔离 + arch 收窄（勿自行实现）
+kernel_workflow/scripts/profile_kernel.sh   profiler 封装
+interface/run_e2e.md                        ★外部集成契约文档，run_kernel 照抄
 interface/run_e2e.py                        抽取 driver 的来源
 interface/run_kernel.py                     ★待新建
 examples/tasks/knn                          唯一现成 case
+examples/tasks/knn/config.yaml              case 的测量接口约定
+examples/tasks/knn/scripts/task_runner.py   compile/correctness/performance 三合一
 ```
 
 **Penguin**
@@ -830,3 +1076,17 @@ packages/docs/content/self-improvement.zh.md        机制说明
 | **GEAK 自带 case 仅 1 个** | `examples/tasks/` 仅 `knn` |
 | `penguin run --goal 500k` 存在 | `packages/cli/src/commands/run.ts:15` |
 | 本机 8 张 MI355X | `rocm-smi` |
+| **公开版 claude 拒绝 `--effort ultracode`，须 `--settings` 注入** | `run_e2e.py:72-80` |
+| SDK 优先驱动自带 bundled CLI 而非 `$PATH` | `run_e2e.py:82-84` |
+| Workflow 调用被路由为非阻塞后台任务 | `run_e2e.py:642-650` |
+| `ALLOWED_TOOLS = [Workflow, Bash, Read, Write]` | `run_e2e.py:70` |
+| `GEAK_CLAUDE_MODEL` 默认 `claude-opus-4-8` | `run_e2e.py:69` |
+| `args` 必须为真 JSON 对象，否则 workflow 立即中止 | `run_e2e.py --dry-run` 输出的 prompt |
+| `kernel_workflow.js` 的 `MIN_IMPROVE` 默认 0.02 | `kernel_workflow.js` |
+| `gpu_lock.sh` 含锁 / 编译缓存隔离 / arch 收窄 / 进程回收四项 | `kernel_workflow/scripts/gpu_lock.sh` |
+| `task_runner.py` 有标准 warmup（10 warmup + 100 iter + event 计时） | `examples/tasks/knn/scripts/task_runner.py:66` |
+| profiler 三件套本机齐全 | `command -v rocprof-compute/rocprofv3/rocprof` |
+| `claude_agent_sdk` 本机未安装（可选依赖） | `python3 -c "import claude_agent_sdk"` |
+| **容器在 PID 1 注入 `ROCR_VISIBLE_DEVICES=0`，默认只 1 卡可用** | `/proc/1/environ` |
+| 该限制可在子进程解除，8 卡均可真实计算 | `env -u ROCR_VISIBLE_DEVICES` + 实跑 matmul（GPU 0/3/7） |
+| `rocprof-compute` 原为缺 14 个 Python 依赖，已修复 | `/opt/rocm-7.2.0/libexec/rocprofiler-compute/requirements.txt` |
