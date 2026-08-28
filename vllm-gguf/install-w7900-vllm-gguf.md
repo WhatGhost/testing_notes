@@ -15,6 +15,16 @@ serve Muse-Glimmer-30B 的 GGUF 权重,并可选开启投机解码。
 | `https://github.com/WhatGhost/vllm-gguf-plugin.git` | `gguf-kernel-perf` | `a48163b89814bc56bc55c54981e9140428045c28` |
 | `https://github.com/WhatGhost/vllm.git` | `gguf-kernel-perf` | `4b33d88c72f517b1ab7da3d8c6f43ee65bb5308e` |
 
+**模型从哪来**:HuggingFace 的 `meta-models` 组织,三个仓库都公开非 gated,匿名可下。
+**只下 GGUF,bf16 的 `.safetensors` 一个都不要**(约 60 GiB,用不到)。
+需要下载的合计约 21 GiB,细节见[第 5 节](#5-模型文件从-huggingface-下载):
+
+| 仓库 | 拿什么 |
+|---|---|
+| `meta-models/Muse-Glimmer-30B-GGUF` | 目标模型 + mmproj + draft 三个 GGUF(21.1 GiB) |
+| `meta-models/Muse-Glimmer-30B` | 仅 6 个配置文件(27 MiB) |
+| `meta-models/Muse-Glimmer-30B-assistant` | 仅 draft 的 `config.json`(883 B) |
+
 阅读顺序:第 0 节必读(它决定了你对性能的预期),然后 2 → 3 → 4 → 5 → 6 顺序执行。
 
 ---
@@ -434,48 +444,131 @@ python -m pip list | grep vllm-gguf-plugin
 
 ---
 
-## 5. 模型文件
+## 5. 模型文件:从 HuggingFace 下载
 
-需要三类文件。**注意:配置目录里的 `.safetensors` 不需要拷**——权重全部来自 GGUF,
-配置目录只用来提供 config 和 tokenizer。跳过它们能省掉约 61 GB 传输量。
+模型全部来自 HuggingFace 的 `meta-models` 组织,**三个仓库都是公开的、非 gated**,
+匿名就能下。要下的是 **21.1 GiB 的 GGUF 权重 + 27 MiB 的配置文件**;bf16 的
+`.safetensors`(三个仓库合计约 60 GiB)**一个都不要**,权重全部来自 GGUF。
 
-| 路径 | 内容 | 大小 | 用途 |
-|---|---|---|---|
-| `models/Muse-Glimmer-30B-GGUF/Muse-Glimmer-30B-KQuant-Dynamic-Q4_K_XL.gguf` | 目标模型权重 | 19 GB | 必需 |
-| `models/Muse-Glimmer-30B-GGUF/dflash-Muse-Glimmer-30B-Q4_K_M.gguf` | draft 模型权重 | 1.6 GB | 开投机解码才需要 |
-| `models/Muse-Glimmer-30B/`(仅配置与 tokenizer) | `config.json` / `tokenizer*` / `chat_template.jinja` / `generation_config.json` / `processor_config.json` | 约 28 MB | 必需 |
-| `models/Muse-Glimmer-30B-assistant/config.json` | draft 的 config | 883 B | 开投机解码才需要 |
+### 5.1 要下哪些文件
 
-`models/Muse-Glimmer-30B-GGUF/mmproj-*.gguf`(1.4 GB)是视觉投影权重,当前的 serve 命令没用到,
-纯文本推理可以不拷。
+**① GGUF 权重** —— `meta-models/Muse-Glimmer-30B-GGUF`。本机这份就是下面 3 个,全都要:
 
-**这些文件从哪来?** 和代码不一样,**模型没有可以直接 clone 的公开来源**:
-两个 GGUF 都是自定义量化(`KQuant-Dynamic-Q4_K_XL`、`dflash-` 前缀),不是上游发布的产物。
-所以**唯一可靠的路子是从本机拷**。两台机器之间不能直连的话,就走中转盘或对象存储,
-文件校验用 `sha256sum` 对一遍(19 GB 的传输出错不算罕见)。
+| 文件 | 字节数 | 用途 |
+|---|---|---|
+| `Muse-Glimmer-30B-KQuant-Dynamic-Q4_K_XL.gguf` | 19,653,960,832(18.30 GiB) | 目标模型 |
+| `mmproj-Muse-Glimmer-30B-Q4_K_M.gguf` | 1,400,328,928(1.30 GiB) | 视觉塔 |
+| `dflash-Muse-Glimmer-30B-Q4_K_M.gguf` | 1,631,208,128(1.52 GiB) | draft 模型,开投机解码才用 |
 
-从本机直接同步(最省事,排除权重文件):
+**三个必须落在同一个目录,而且别改名。** mmproj 不是靠命令行参数传进去的:插件在
+目标 GGUF 所在目录里按 `mmproj.gguf` → `mmproj-*.gguf` → `*mmproj*.gguf` 通配符找它
+(`vllm_gguf_plugin/gguf_utils.py` 的 `detect_gguf_multimodal`),llama.cpp 基线侧则是
+显式 `--mmproj`(`run_matrix.sh:113`)。所以启动命令里看不到它,但缺了它视觉路径就不成立
+——目标 GGUF 的 731 个张量全是语言模型,视觉塔那 809 个 `v.blk.*` 只在 mmproj 里。
+
+仓库里另有一个 `Muse-Glimmer-30B-KQuant-17GB-Q4_K_M.gguf`(另一档量化),本机没下过、
+本文也没测过。
+
+**② 目标模型的配置文件** —— `meta-models/Muse-Glimmer-30B`,只要这 6 个,合计 27 MiB:
+
+| 文件 | 字节数 | 用途 |
+|---|---|---|
+| `config.json` | 5,109 | 模型结构,含 `text_config` 与 `vision_config` |
+| `tokenizer.json` | 28,129,897 | tokenizer 本体 |
+| `tokenizer_config.json` | 79,936 | tokenizer 配置 |
+| `chat_template.jinja` | 9,992 | chat 接口的模板 |
+| `generation_config.json` | 202 | 默认采样参数,vLLM 启动时会读并覆盖自己的默认值 |
+| `processor_config.json` | 1,084 | 多模态 processor |
+
+这 6 个就是 `--hf-config-path` 和 `--tokenizer` 要读的全部内容,实测能把 config、
+tokenizer、多模态 processor 都正常加载起来。仓库里其余的 `LICENSE` / `README.md` /
+`USAGE_POLICY.md` / `.gitattributes` 用不到;`model.safetensors.index.json` 也**不用**
+(它只负责把张量名映射到 safetensors 分片,而我们不从 safetensors 取权重)。
+
+**③ draft 的配置文件** —— `meta-models/Muse-Glimmer-30B-assistant`,只要 `config.json`
+(883 字节),开投机解码时由 `--speculative-config` 里的 `hf_config_path` 指向它。
+
+### 5.2 下载命令
+
+```bash
+mkdir -p /target/models
+
+# ① GGUF 权重:3 个,同一目录
+hf download meta-models/Muse-Glimmer-30B-GGUF \
+    --include "Muse-Glimmer-30B-KQuant-Dynamic-Q4_K_XL.gguf" \
+    --include "mmproj-Muse-Glimmer-30B-Q4_K_M.gguf" \
+    --include "dflash-Muse-Glimmer-30B-Q4_K_M.gguf" \
+    --local-dir /target/models/Muse-Glimmer-30B-GGUF
+
+# ② 目标模型的配置文件:6 个
+hf download meta-models/Muse-Glimmer-30B \
+    --include "config.json" \
+    --include "tokenizer.json" \
+    --include "tokenizer_config.json" \
+    --include "chat_template.jinja" \
+    --include "generation_config.json" \
+    --include "processor_config.json" \
+    --local-dir /target/models/Muse-Glimmer-30B
+
+# ③ draft 的配置文件:1 个
+hf download meta-models/Muse-Glimmer-30B-assistant \
+    --include "config.json" \
+    --local-dir /target/models/Muse-Glimmer-30B-assistant
+```
+
+**每个文件都得自己带一个 `--include`**,别写成 `--include "a" "b"`。`hf download` 的
+位置参数是「显式文件名」,第二个值会被当成位置参数,于是 `--include` 被整个忽略
+(实测会打 `Ignoring --include since filenames have been explicitly set.`,结果只下到
+一个文件,而且不是你想要的那个)。
+
+匿名下载会警告限速(`Please set a HF_TOKEN ...`)。21.1 GiB 嫌慢就 `export HF_TOKEN=...`
+再下。
+
+### 5.3 校验
+
+GGUF 的 sha256 已与 HF 上当前 `main` 对过,**与本文压测所用的文件逐字节一致**:
+
+```bash
+cd /target/models/Muse-Glimmer-30B-GGUF && sha256sum -c <<'EOF'
+ac7023d6a4c704eb9af54ab53e476a66b7f5b6c0ef2fc4a8dde5253c291a6c38  Muse-Glimmer-30B-KQuant-Dynamic-Q4_K_XL.gguf
+f48b452316f9b213758e8659444029b961a24a07f99a1abb2a9f88b06f7c00c6  mmproj-Muse-Glimmer-30B-Q4_K_M.gguf
+b2e808bf656086fe86bd0d0bd990f01d33e377537a07c02d45371517c8b264ef  dflash-Muse-Glimmer-30B-Q4_K_M.gguf
+EOF
+```
+
+配置文件齐不齐(7 个都得在,缺一个就报 `No such file`):
+
+```bash
+ls /target/models/Muse-Glimmer-30B/{config,tokenizer,tokenizer_config,generation_config,processor_config}.json \
+   /target/models/Muse-Glimmer-30B/chat_template.jinja \
+   /target/models/Muse-Glimmer-30B-assistant/config.json
+```
+
+### 5.4 备选:从本机直接同步
+
+已经有一份的话,拷过去比重下 21.1 GiB 快:
 
 ```bash
 # 在新机器上执行,把 SRC 换成本机地址
 SRC=user@old-machine:/target/models
 
-mkdir -p /target/models
-# GGUF 权重(mmproj 不要)
-rsync -avP --include='*Q4_K_XL.gguf' --include='dflash-*.gguf' --exclude='*' \
+mkdir -p /target/models/Muse-Glimmer-30B{,-GGUF,-assistant}
+
+# ① GGUF 权重:3 个
+rsync -avP --include='*Q4_K_XL.gguf' --include='mmproj-*.gguf' \
+    --include='dflash-*.gguf' --exclude='*' \
     "$SRC/Muse-Glimmer-30B-GGUF/" /target/models/Muse-Glimmer-30B-GGUF/
-# 配置与 tokenizer,排除 safetensors
-rsync -avP --exclude='*.safetensors' "$SRC/Muse-Glimmer-30B/" /target/models/Muse-Glimmer-30B/
-rsync -avP --exclude='*.safetensors' "$SRC/Muse-Glimmer-30B-assistant/" \
+# ② 目标模型的配置文件:6 个(--exclude='*' 兜底,把 safetensors 挡在外面)
+rsync -avP --include='config.json' --include='tokenizer.json' \
+    --include='tokenizer_config.json' --include='chat_template.jinja' \
+    --include='generation_config.json' --include='processor_config.json' \
+    --exclude='*' "$SRC/Muse-Glimmer-30B/" /target/models/Muse-Glimmer-30B/
+# ③ draft 的配置文件:1 个
+rsync -avP "$SRC/Muse-Glimmer-30B-assistant/config.json" \
     /target/models/Muse-Glimmer-30B-assistant/
 ```
 
-核对(19G 和 1.6G 两个 GGUF、两个 config.json 都在):
-
-```bash
-du -sh /target/models/Muse-Glimmer-30B-GGUF/*.gguf
-ls /target/models/Muse-Glimmer-30B/config.json /target/models/Muse-Glimmer-30B-assistant/config.json
-```
+走这条路也请跑一遍 5.3 的校验:20 GiB 级别的传输出错不算罕见。
 
 ---
 
@@ -494,8 +587,10 @@ ls /target/models/Muse-Glimmer-30B/config.json /target/models/Muse-Glimmer-30B-a
 | 开投机解码(n=8) | 26.31 GiB | 140.03 GiB | 4,742,778 token | 31.0 KiB |
 
 (以上为 MI300X、`--gpu-memory-utilization 0.9`、`--max-model-len 131072`、`--max-num-seqs 16`
-的启动日志实测。注意**权重占用 24.41 GiB 明显大于 GGUF 文件的 19 GiB**——文件大小不等于
-显存占用,别拿文件大小估。draft 再加约 1.9 GiB。)
+的启动日志实测。注意**权重占用 24.41 GiB 明显大于目标 GGUF 文件的 18.30 GiB**——文件大小不等于
+显存占用,别拿文件大小估。差额来自两处:一是同目录被自动发现的 mmproj 视觉塔也进了显存
+(见 5.1),日志里 `MMEncoderAttention` 初始化、并按 4 个图像项预留了 16384 token 的
+encoder cache;二是 F32/BF16 张量与运行时反量化的部分不按量化体积算。draft 再加约 1.9 GiB。)
 
 反推出本机的固定开销:`172.8(=192×0.9) − 24.41 − 142.07 ≈ 6.3 GiB`,
 这部分是 activation 与 profiling 占的。据此估 W7900:
@@ -521,7 +616,8 @@ ls /target/models/Muse-Glimmer-30B/config.json /target/models/Muse-Glimmer-30B-a
 3. **降 `--max-num-seqs`**,16 → 8 或 4。注意它**不直接决定 KV 池大小**
    (池子是按空闲显存分配的),作用是压低 activation 峰值、间接给池子腾一点空间,
    所以效果有限,别指望靠它解决。
-4. **不开投机解码**,省掉 draft 的 1.6 GB 权重和它自己那份 KV。
+4. **不开投机解码**,权重占用从 26.31 GiB 降到 24.41 GiB(省 1.9 GiB),
+   每 token 的 KV 也从 31.0 KiB 降到 23.4 KiB——两头都松一截。
 
 ### 6.2 启动命令
 
@@ -686,10 +782,23 @@ print('mmq_b10373 available:', mmq_b10373_available())"
 
 写这份文档的机器是 **MI300X(gfx942)**,手上没有 W7900,所以要分清可信度:
 
-**在本机实测过、输出即文中所写**:第 1 节的环境核对命令;**第 2 节的取代码流程**
-(2.1 的钉 commit 拉法在空目录里从零跑通过,匿名访问、体积、2.3 的三条核对值全部实测);
-第 3.3 的软链循环(实测产出 10 项);第 3.4 的两条 `grep -c`(0 与 3);
-第 7 节的验证 1–8 全部(其中第 8 条在本机返回 `True`,因为本机是 CDNA)。
+**在本机实测过、输出即文中所写**:
+
+- 第 1 节的环境核对命令;
+- **第 2 节的取代码流程**:2.1 的钉 commit 拉法在空目录里从零跑通过,
+  匿名访问、体积、2.3 的三条核对值全部实测;
+- **第 5 节的模型文件**:三个仓库的可见性与文件清单用 HF API 查过,5.1 表里的字节数
+  就是本机文件的实际大小;`hf download` 的 `--include` 重复写法实测过一次(那条
+  「多个 `--include` 会被忽略」的坑就是实测撞出来的);三个 sha256 逐个核过(目标与
+  draft 跑 `sha256sum -c` 都 OK、耗时 14 秒,mmproj 的 `f48b4523…` 与 HF `main` 的
+  LFS oid 逐字符一致);**5.1 里那 6 个配置文件是实测出来的最小集**——把这 6 个单独拷到
+  一个空目录,`get_config` / `AutoTokenizer` / `AutoProcessor` 三样都能加载
+  (`model_type=muse_glimmer`、`vision_config` 在、chat template 在、processor 是
+  `MuseGlimmerProcessor`),这也是「`model.safetensors.index.json` 不用」的依据;
+  mmproj 是视觉塔这点是数 GGUF 张量表得到的(目标 731 个、视觉 0 个;mmproj 809 个,
+  与 bf16 索引里的 809 个视觉张量对上),通配符发现逻辑是读插件源码确认的;
+- 第 3.3 的软链循环(实测产出 10 项);第 3.4 的两条 `grep -c`(0 与 3);
+- 第 7 节的验证 1–8 全部(其中第 8 条在本机返回 `True`,因为本机是 CDNA)。
 
 **基于本机实测数据、但向 W7900 外推**:第 6.1 的显存估算。表里那四个数
 (24.41 / 142.07 GiB、26.31 / 140.03 GiB)都是 MI300X 启动日志里的原值,
@@ -697,9 +806,17 @@ print('mmq_b10373 available:', mmq_b10373_available())"
 W7900 的 activation 开销未必一样,没在 48 GiB 卡上验证过实际能不能起。
 第 6.2 的启动耗时(约 3 分钟)同理,是本机的数。
 
-**从代码和仓库状态推出、未实机执行**:第 5 节的 rsync;**第 0.2 节的 RDNA3
+**部分实测**:第 5.4 的 rsync——两个 `--include/--exclude` 过滤器在本机
+`rsync -anv` 干跑过,分别正好命中 3 个 GGUF 和 6 个配置文件,但跨机传输本身没做过。
+
+**从代码和仓库状态推出、未实机执行**:**第 0.2 节的 RDNA3
 启用路径**——那张表的每一行都是读 vendor 源码确认的(文件、行号、宏条件都可自查),
 但「放开门禁后在 gfx1100 上真能跑对、跑得快」没有任何实测支撑。
+
+**没验过、文中也没声称验过的**:图像输入这条路。mmproj 会被加载(日志里视觉编码器
+确实初始化了),但本文所有压测与质量核对都是纯文本,没发过一张图,所以「多模态输出
+是对的」这句话本文给不出依据。只跑文本的话它仍然要下——它在加载路径里,不下就等于
+让 loader 去找一个不存在的文件。
 
 **W7900 上必须自己验的**:
 - 带 `VLLM_GGUF_PLUGIN_NO_MMQ_B10373=1` 的插件编译能否通过(本机构建的是带 vendor 的版本);
