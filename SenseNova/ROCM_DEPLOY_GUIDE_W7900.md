@@ -159,9 +159,15 @@ pip install -r rocm-requirements.txt -c rocm-constraints.txt
 
 # 以下四个包在过滤清单里被判为不需要，但启动时会因无条件 import 而失败，必须补装
 pip install redis av decord uvloop
+
+# 最后以可编辑方式安装两个项目本身。--no-deps 不能省，原因见下
+cd /target/LightLLM && pip install -e . --no-deps
+cd /target/LightX2V && pip install -e . --no-deps
 ```
 
 四个补装包的触发点:`redis` 来自 `embed_cache/afs_utils.py` 在多模态视觉服务路径上的无条件导入,`av` 与 `decord` 来自视频编解码导入链,`uvloop` 是 HTTP 服务的事件循环。
+
+⚠️ **`--no-deps` 是整个安装流程里最容易翻车的地方。** 漏掉它,pip 会重新解析上游 `requirements.txt`——里面写着 `torch==2.9.1`——**又会把 CUDA 版 torch 拉回来覆盖 ROCm 版**,前面的约束努力当场作废。偏偏这一步发生在依赖都装完、看起来快完工的时候,最容易松懈。
 
 ### 4.4 装完立刻核对
 
