@@ -365,7 +365,13 @@ Exception raised from mha_varlen_fwd at aiter_meta/csrc/py_itfs_ck/mha_varlen_fw
 
 **neopp 侧无需改动。** 它传的 q 是三维张量，`bs == 1`，`flash_attn3` 走的是 `flash_attn_func_v3` 稠密分支、根本不读 `cu_seqlens`，所以在 NVIDIA 上一直正常；aiter 的实现则不论 `bs` 是否为 1 都走 varlen 接口，才暴露出来。
 
-两处的完整 diff 与复现步骤见 `/target/sensenova-rocm/aiter-eval/lightx2v-aiter-fixes.patch`。
+两处改动已导出为一个可直接应用的 patch，基线对齐上游 `main`（`git apply` 或 `patch -p1` 均可，已验证应用后与本机实测代码逐字节一致）：
+
+```
+/target/sensenova-rocm/aiter-eval/lightx2v-rocm-aiter.patch
+```
+
+中文的根因分析与复现代码见同目录的 `aiter-fixes-notes.md`。
 
 ### 配置与启动
 
