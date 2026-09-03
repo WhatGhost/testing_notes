@@ -1,10 +1,12 @@
 # SenseNova-U1.5-8B-MoT 文生图 ROCm 部署报告（AMD Radeon PRO W7900）
 
-在 AMD Radeon PRO W7900（gfx1100 / RDNA3）上运行 SenseNova-U1.5-8B-MoT 双分支文生图模型的完整记录，含启动配置、单卡与双卡性能实测、8 步蒸馏 LoRA 加速、显存数据与复现步骤。
+在 AMD Radeon PRO W7900（gfx1100 / RDNA3）上运行 SenseNova-U1.5-8B-MoT 双分支文生图模型的完整记录，含启动配置、单卡与双卡性能实测、8 步蒸馏 LoRA 与 aiter 注意力后端加速、显存数据与复现步骤。
 
 ## 结论
 
 文生图端到端跑通，成图内容与结构正确。1024×1024 出图：50 步基准约 **283 秒**，启用官方 8 步蒸馏 LoRA 后约 **33 秒**（提速 8.6 倍，质量相当且细节更锐利）。
+
+再叠加可选的 aiter 注意力后端，50 步降到约 **164 秒**、8 步 LoRA 降到约 **16 秒**，出图质量无退化。它需要额外装 AMD 的 AITER 算子库并打两处补丁，属可选项；本报告其余章节的性能与显存数据均以默认的 `torch_sdpa` 为基线。详见「可选：aiter 注意力后端」。
 
 **单卡即可运行，这是本机相对 32 GiB 级显卡的关键差异。** W7900 单卡 47.98 GiB，容得下 32.66 GiB 权重加全部运行时开销，实测峰值 42.01 GiB，余量约 6 GiB。R9700（31.86 GiB/卡）上必须分卡部署的限制在此不成立。
 
@@ -19,6 +21,8 @@
 | 纯文本图像请求传字符串 content | 上游缺陷，平台无关 | LightLLM | `lightllm/server/build_prompt.py` |
 
 三处改动取自 `gyydev/rocm-gfx1201` 分支，在 gfx1100 上无需任何额外修改即可直接套用——说明这套适配是 RDNA 通用的，不绑定具体架构代次。
+
+上表是默认 `torch_sdpa` 路径所需的全部改动。若改用可选的 aiter 后端，还需另外两处，但都落在 AMD ROCm 专属文件内，不触及平台无关代码，见「可选：aiter 注意力后端」一节。
 
 **注意力后端的切换不算改动**：它通过一份仓库外的配置文件实现（`/target/sensenova-rocm/configs/neopp_dense_rocm.json`），两个上游仓库的配置文件保持原样。
 
@@ -274,6 +278,134 @@ python -m lightllm.server.api_server \
 }
 ```
 
+## 可选：aiter 注意力后端（端到端提速约 1.7 倍）
+
+`torch_sdpa` 之外还有一条更快的路。[AITER](https://github.com/ROCm/aiter) 是 AMD 官方的算子库，LightX2V 已经内置了对接实现（`lightx2v_platform/ops/attn/amd_rocm/flash_attn.py`，注册名 `aiter_attn`），本机实测有效：
+
+| 场景 | `torch_sdpa` | `aiter_attn` | 提速 |
+|---|---|---|---|
+| 50 步 + CFG | 283.1 s | 167.7\* / 164.6 / 163.3 s | **1.72x** |
+| 8 步蒸馏 LoRA | 33.1 s | 19.7\* / 17.2 / 16.3 / 16.2 s | **2.0x** |
+| 注意力单算子，seq 4096 | 17.6 ms | 4.2 ms | 4.23x |
+
+\* 首次请求，含 aiter 即时编译开销。
+
+出图质量无退化，灰度分布与基准一致（`min=0`、`max=255`、`mean` 125–127）；单算子输出与 `torch_sdpa` 的最大绝对偏差约 `1e-3`，属 bf16 噪声量级。
+
+单算子 4.23 倍的收益到端到端摊薄成 1.72 倍，是因为注意力只占总耗时的一部分，MoE 前馈与各类 GEMM 不受影响，属正常衰减。
+
+### 为什么 gfx1100 上仍然有效
+
+上游注释里写的「2.5x–6x，内部走 FA3（fmha_v3）」是 CDNA 的数字，**gfx1100 拿不到那条路径**。`aiter/ops/mha.py` 中所有快速路径都有架构门控，`can_impl_fmha_v3_fwd()` 要求 `gfx942`/`gfx950`，另有一条 `gfx1250` 的 ASM 路径，gfx1100 都不满足，最终落到 `else` 分支的 CK 通用实现 `mha_varlen_fwd`。
+
+**但通用路径依然明显快于 AOTriton 的 SDPA**，所以结论是可用的——只是收益来源和上游宣传的不是同一条 kernel。AITER 官方文档也把 W7900 列为 *Experimental*，并注明「RDNA 上 Triton 与多数 FlyDSL kernel 可用，多数 CK 与 ASM kernel 仅限 CDNA」。
+
+### 三个前提，缺一跑不起来
+
+**一、安装 aiter 与 flydsl。** 官方 Release 提供预编译 wheel，矩阵覆盖 ROCm 7.0/7.1/7.2 × Python 3.10/3.12，本机的 ROCm 7.2.3 + Python 3.12 正好命中，无需源码编译：
+
+```bash
+# 约 1.59 GB；本机直连 GitHub 大文件不稳定，建议分块续传
+curl -L -C - --retry 20 --retry-all-errors -o aiter.whl \
+  "https://github.com/ROCm/aiter/releases/download/v0.1.21/amd_aiter-0.1.21%2Brocm7.2.manylinux.2.28-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+
+# 必须 --no-deps：否则会拉入 PyPI 版 triton，覆盖掉 ROCm 定制栈
+pip install --no-deps amd_aiter-0.1.21+rocm7.2.manylinux.2.28-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+pip install --no-deps flydsl        # aiter 必需依赖，缺了会 ModuleNotFoundError
+```
+
+装完核对 `torch`、`triton` 版本未变。
+
+**wheel 里没有 gfx1100 的代码对象**，预编译二进制只含 `gfx942` 与 `gfx950`（可用 `strings` 查 `.so` 里的 `amdgcn-amd-amdhsa--gfx*` 确认），gfx1100 上的 24 个文件全是 Triton 调优配置 JSON。因此首次调用会触发 hipcc 即时编译，**每种 kernel 配置约 100 秒**，编译结果落盘复用。上表首次请求的额外开销即来源于此。
+
+**二、必须设 `PLATFORM=amd_rocm` 环境变量。** `lightx2v_platform/ops/__init__.py` 按该变量条件导入平台实现，只有取值为 `amd_rocm` 时才会执行 `from .attn.amd_rocm import *`。不设的话注册装饰器根本不运行，配置里写了 `aiter_attn` 只会得到 `KeyError`。注意主注册表通过 `ATTN_WEIGHT_REGISTER.merge(PLATFORM_ATTN_WEIGHT_REGISTER)` 做的是导入期一次性快照，事后手动 import 该模块也补不进去。
+
+**三、需要两处额外代码改动**，与本报告「代码改动详解」中的三处相互独立，仅在走 aiter 时需要。两处都落在 AMD ROCm 专属文件内，**不触及任何平台无关代码**：
+
+| 改动 | 文件 |
+|---|---|
+| sgl_kernel 注入循环跳过 `torch.ops` / `torch.classes` | `lightx2v_platform/base/amd_rocm.py` |
+| aiter 补上 `cu_seqlens` 的设备搬运 | `lightx2v_platform/ops/attn/amd_rocm/flash_attn.py` |
+
+**第一处：算子命名空间被误覆盖，import 阶段就崩。** `PLATFORM=amd_rocm` 时 `AmdRocmDevice.init_device_env()` 会把纯 Python 的 `AiterSglKernelCompat` 塞进 `sys.modules["sgl_kernel"]`——因为真正的 sgl_kernel 是 CUDA 专属的 C++ 扩展，ROCm 上装不了，只能用 aiter 的函数包装出同名方法来冒充。注入后它还会遍历 `sys.modules`，把已导入过 `sgl_kernel` 的模块属性一并替换：
+
+```python
+for mod_name, mod in list(sys.modules.items()):
+    if mod is not None and hasattr(mod, "sgl_kernel"):
+        setattr(mod, "sgl_kernel", sgl_kernel)
+```
+
+问题在于 **`torch.ops` 自身就以 `torch.ops` 为键存在于 `sys.modules` 中**（`_Ops` 是 `types.ModuleType` 的子类），而 `_Ops.__getattr__` 对**任意**名字都会当场创建 `_OpNamespace` 并缓存下来。也就是说循环里的 `hasattr(mod, "sgl_kernel")` 遍历到 `torch.ops` 时必然返回真——这一次 `hasattr` 调用本身就把命名空间造了出来——紧接着的 `setattr` 便把整个算子命名空间替换成了 shim 实例，`torch.classes` 同样被误伤。
+
+之后 `lightx2v/common/ops/mm/sgl_kernel.py` 里的 `hasattr(torch.ops.sgl_kernel, "fp8_scaled_mm")` 因 shim 恰好有同名方法而为真，紧接着取 `.default` 拿到的却是绑定方法：
+
+```
+AttributeError: 'function' object has no attribute 'default'
+```
+
+**根源在注入循环，不在被它破坏的 `sgl_kernel.py`**，因此修法是在循环里跳过这两个伪模块，而不是去 `sgl_kernel.py` 里加防御性判空。
+
+**这不是 gfx1100 或 RDNA 的问题，也不依赖 import 顺序。** 整条崩溃路径都在 Python 层，不碰任何硬件：把上面两段代码原样搬到一个 `CUDA_VISIBLE_DEVICES=""`、连 aiter 都没装的进程里，用几行的假 shim 就能复现同样的 `AttributeError`。判断注入与否的 `IS_AMD_ROCM` 取自 `torch.version.hip`，CDNA 与 RDNA 同样为真，循环也不看架构，因此**当前上游代码在 MI300/MI355 上启用 `PLATFORM=amd_rocm` 会同样崩溃**。
+
+**它是一次回归，而非 ROCm 适配本身的缺陷。** 上游的时间线解释了为什么这条路径此前被验证通过却仍会坏：
+
+| 时间 | 事件 |
+|---|---|
+| 2025-12-25 | PR #661 加入 ROCm 支持，含上面这段 shim 注入循环 |
+| 2026-08-14 | PR #1381（MiniMax-H3 VAE 优化）新建 `sgl_kernel.py`，写下 `torch.ops.sgl_kernel.fp8_scaled_mm.default` |
+
+`lightx2v/common/ops/mm/sgl_kernel.py` 全仓库只有 2026-08-14 那一次提交，`mm_weight.py` 中引入它的那行 import 也是同一天加的。ROCm 适配落地时这个文件尚不存在，当时的验证是有效的；八个月后的新代码撞上旧的注入逻辑才产生冲突，且未在 AMD 路径上复验。**因此这一处修复的意义不限于本机**，它是 main 分支上所有 ROCm 用户启用该平台开关时都会遇到的阻断性问题。
+
+**第二处：aiter 漏了 `cu_seqlens` 的设备搬运。** 调用方允许把 `cu_seqlens` 建在 CPU 上、由后端负责搬运，这是 `lightx2v/common/ops/attn/flash_attn.py` 里 `flash_attn2` 与 `flash_attn3` 已有的约定（两者都写了 `is_cpu` 判断）。aiter 的 `apply` 漏了这步，neopp 调用时报：
+
+```
+RuntimeError: cu_seqlens_q must be on CUDA
+Exception raised from mha_varlen_fwd at aiter_meta/csrc/py_itfs_ck/mha_varlen_fwd_kernels.cu:423
+```
+
+**neopp 侧无需改动。** 它传的 q 是三维张量，`bs == 1`，`flash_attn3` 走的是 `flash_attn_func_v3` 稠密分支、根本不读 `cu_seqlens`，所以在 NVIDIA 上一直正常；aiter 的实现则不论 `bs` 是否为 1 都走 varlen 接口，才暴露出来。
+
+两处的完整 diff 与复现步骤见 `/target/sensenova-rocm/aiter-eval/lightx2v-aiter-fixes.patch`。
+
+### 配置与启动
+
+配置文件在对应的 ROCm 配置基础上只改 `attn_type` 一行：
+
+```
+/target/sensenova-rocm/configs/neopp_dense_rocm_aiter.json          # 50 步
+/target/sensenova-rocm/configs/neopp_dense_8steps_rocm_aiter.json   # 8 步 LoRA
+```
+
+启动命令相对「单卡（推荐）」一节只多一个环境变量，其余参数不变：
+
+```bash
+CUDA_VISIBLE_DEVICES=1 PLATFORM=amd_rocm \
+python -m lightllm.server.api_server \
+  --model_dir /target/models/SenseNova-U1.5-8B-MoT \
+  --enable_multimodal --enable_multimodal_x2i \
+  --x2i_server_deploy_mode colocate --x2i_server_used_gpus 1 \
+  --tp 1 --visual_gpu_ids 0 --disable_cudagraph \
+  --max_total_token_num 8192 --max_req_total_len 2048 \
+  --batch_max_tokens 1024 --chunked_prefill_size 1024 \
+  --x2v_gen_model_config /target/sensenova-rocm/configs/neopp_dense_rocm_aiter.json \
+  --host 127.0.0.1 --port 8081
+```
+
+启动日志出现下面两行即表示接线成功：
+
+```
+lightx2v_platform.ops.attn.amd_rocm.flash_attn - aiter flash_attn_varlen_func found (AMD ROCm optimized)
+lightx2v_platform.base.amd_rocm - aiter sgl_kernel compatibility layer enabled (RMSNorm, GEMM)
+```
+
+### 是否采用
+
+**追求出图速度就用**：8 步 LoRA 叠加 aiter 后单图约 16 秒，相对基准配置的 283 秒是 17 倍的总提速。代价是多一个 1.59 GB 依赖、首次调用的编译等待，以及两处额外补丁。
+
+**求稳则留在 `torch_sdpa`**：零额外依赖，是上游默认路径，本报告的显存与性能数据也都以它为基线。AITER 对 W7900 的支持等级是 Experimental，长期跟随上游版本更新存在不确定性。
+
+两处补丁的长期成本并不对等：`sgl_kernel` 那处是上游回归，一旦被修复即可撤掉；`cu_seqlens` 那处是 aiter 后端自身缺失的设备搬运，需要合入上游才能免去。
+
 ## 设备编号：本机两套编号一致
 
 **这台机器上 HIP 的设备枚举顺序与 `rocm-smi` 的卡编号完全一致**，现场核验结果：
@@ -330,7 +462,7 @@ PY
 
 ## 性能
 
-1024×1024，50 步基准配置，两种部署各三次实测。
+1024×1024，50 步基准配置，两种部署各三次实测。本节数据均取默认的 `torch_sdpa` 后端；换用 aiter 后端的对比见「可选：aiter 注意力后端」。
 
 先明确 NFE（前向传播次数）的口径，它决定了每步耗时的折算方式。配置中 `enable_cfg` 为真、`cfg_scale` 为 4.0，而 `cfg_interval` 是 `[-1, 2]`——调度器的时间步由 `linspace(0.0, 1.0, steps+1)` 生成并经 shift 变换，取值始终落在 [0, 1] 内，故区间判定 `t >= -1 and t <= 2` **恒为真，CFG 全程启用**。代码路径上此时每步跑两次前向（条件与无条件各一次），因此 **50 步 = 100 NFE**。实测各步耗时高度一致（50 步内标准差仅 0.03 秒）也印证了这一点：若 CFG 只在部分步生效，耗时会呈现两个明显的簇。
 
@@ -743,7 +875,7 @@ zstandard==0.23.0
 
 **"8 步且不加 LoRA"的质量未测。** 因步数属实例级配置，该组合需单独准备配置并重启才能测到，故无法量化蒸馏 LoRA 在质量上究竟补偿了多少。
 
-**FP8 量化未验证。** 本机容量充裕，单卡已可运行，量化的必要性不高。`neopp_dense_fp8.json` 指定的 `fp8-sgl` 方案依赖 CUDA 专属的 `sgl_kernel`，需换用 `mxfp8` 等 AMD 路径。
+**FP8 量化未验证。** 本机容量充裕，单卡已可运行，量化的必要性不高。`neopp_dense_fp8.json` 指定的 `fp8-sgl` 方案依赖 CUDA 专属的 `sgl_kernel`。不过在 `PLATFORM=amd_rocm` 下，LightX2V 会用 aiter 的 `gemm_a8w8_CK` 顶替 `sgl_kernel.fp8_scaled_mm`（日志中的「aiter sgl_kernel compatibility layer enabled」），这条路径未必真的走不通——本次只验证了该兼容层能正常加载，未实测 FP8 出图。
 
 **autotune 配置未针对 gfx1100。** 现有 JSON 均为 H200 特化，尚有提速空间。
 
@@ -780,6 +912,10 @@ hf download sensenova/SenseNova-U1.5-8B-MoT-LoRAs \
 # 配置在上游 neopp_dense_8steps.json 基础上改 attn_type 为 torch_sdpa，
 # 并把 lora_configs 的占位符路径替换为上面下载的实际路径
 # 完整内容见"启用 8 步蒸馏 LoRA"一节，可直接复制该 JSON
+
+# 4c.（可选）改用 aiter 注意力后端，再提速约 1.7 倍
+#     需额外装 AITER 与 flydsl、多打两处补丁、启动时加 PLATFORM=amd_rocm
+#     完整步骤见"可选：aiter 注意力后端"一节
 
 # 5. 核验设备编号映射（见"设备编号"一节），挑空闲卡决定 CUDA_VISIBLE_DEVICES
 rocm-smi --showbus --csv
