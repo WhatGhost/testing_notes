@@ -72,7 +72,8 @@
 
 ## 规格比值与实测比值
 
-<img width="1690" height="702" alt="speed_ratio_vs_latency" src="https://github.com/user-attachments/assets/7422ff82-23c1-4c24-b9fc-aba8d3be3bee" />
+<img width="1676" height="879" alt="speed_ratio_vs_latency" src="https://github.com/user-attachments/assets/18556ba8-2e8f-480d-b551-692c67de8f0b" />
+
 
 
 图中每个点是一个形状在两张卡上的算子延迟之比（kernel 模式），横轴是基准卡上的延迟，两轴都是对数刻度。水平线是两张卡的规格比：虚线是带宽比，点划线是 BF16 矩阵算力比，点线是 FP32 向量算力比（AMD 按双发射），长短线是 INT8 矩阵算力比；相差不到 1% 的合并成一条（R9700 ÷ RTX 4090 的 FP32 向量与 INT8 矩阵算力比，W7900D ÷ RTX 4090 的 BF16 矩阵与 FP32 向量算力比）。访存型算子对照带宽比；叉号是 fp32 输入的 `tl.dot`（`context_attention`、`fused_moe_router_tensorcore`），对照 FP32 算力比；加号是 `w8a8_block_int8_matmul`，对照 INT8 算力比；BF16 算力比对应输入为 bf16 的 `tl.dot`。左图最左侧成列的点是 4090 上只有 3–5 µs 的形状，比值由三边的计时下限决定。右图最高的点（18 倍）是 `w8a8_block_int8_matmul` 的一个小形状，W7900D 187.6 µs、R9700 10.40 µs、RTX 4090 6.14 µs，是这个形状在 W7900D 上本身偏慢。
