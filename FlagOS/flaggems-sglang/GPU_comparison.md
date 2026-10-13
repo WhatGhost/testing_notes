@@ -72,7 +72,8 @@
 
 ## 规格比值与实测比值
 
-![各形状的跨卡速度比](results/gpu_comparison/speed_ratio_vs_latency.png)
+<img width="1690" height="702" alt="speed_ratio_vs_latency" src="https://github.com/user-attachments/assets/7422ff82-23c1-4c24-b9fc-aba8d3be3bee" />
+
 
 图中每个点是一个形状在两张卡上的算子延迟之比（kernel 模式），横轴是基准卡上的延迟，两轴都是对数刻度。虚线是两张卡的带宽比；叉号是 fp32 输入的 `tl.dot`（`context_attention`、`fused_moe_router_tensorcore`）。左图最左侧成列的点是 4090 上只有 3–5 µs 的形状，比值由三边的计时下限决定。右图最高的点（18 倍）是 `w8a8_block_int8_matmul` 的一个小形状，W7900D 187.6 µs、R9700 10.40 µs、RTX 4090 6.14 µs，是这个形状在 W7900D 上本身偏慢。
 
