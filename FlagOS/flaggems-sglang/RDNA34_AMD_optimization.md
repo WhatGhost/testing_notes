@@ -8,6 +8,8 @@
 - W7900D：做了两轮初步测试，18 个算子有收益；另对全部算子扫了一遍 num_warps。其余是推算。
 - 两张卡之间：R9700 第一批的三项改法在 W7900D 上也测过，`fused_moe_router_tensorcore`、`causal_conv1d_fn` 同样变快，`context_attention` 的 bf16x3 在 W7900D 上反而变慢；W7900D 上的改法都没有在 R9700 上测过。
 
+**W7900D 的落地情况（2026-11-02）**：W7900D 第一批的 18 个算子已分五个 PR 移植进上游的 rdna3 后端（`_amd/rdna3/ops/`）：[#199](https://github.com/flagos-ai/FlagGems-sglang/pull/199)、[#205](https://github.com/flagos-ai/FlagGems-sglang/pull/205)、[#231](https://github.com/flagos-ai/FlagGems-sglang/pull/231)、[#256](https://github.com/flagos-ai/FlagGems-sglang/pull/256) 已合入，[#271](https://github.com/flagos-ai/FlagGems-sglang/pull/271)（四个注意力算子）在审。#199 把 `ARCH_MAP` 改成按精确的 GPU 目标匹配，只有 gfx1100 映射到 rdna3，R9700（gfx1201）仍走通用实现，这些改动不会作用到 R9700 上。PR 中的实现与原型不完全相同，差别最大的是 `context_attention`：合入版对 fp32 输入保持 fp32 计算，benchmark（只列 fp32）的大形状快 1.23–2.98 倍，不是原型把 fp32 输入转成 fp16 时的 4.64–18.53 倍。各算子 PR 版本的加速比见 `W7900D_AMD_optimization.md` 的「第一批」。本文下面的 W7900D 数字仍是原型阶段的，除非另行注明。
+
 ## 硬件和整体情况
 
 | 项目 | Radeon AI PRO R9700 | Radeon PRO W7900D | RTX 4090 |
@@ -34,7 +36,7 @@
 | 带宽归一化效率 < 0.5 / 0.5–0.8 / ≥ 0.8 的算子数 | 4 / 26 / 14 | 15 / 28 / 1 |
 | 简单访存型算子的峰值带宽利用率（4090 为 87%–91%） | 61%–84% | 45%–65% |
 | 延迟 ≤ 1.5 × 计时下限的形状 | 220 / 484 | 238 / 484 |
-| 初步测试改后的大形状耗时比 | 没有汇总（只有 3 个算子有改后的数据） | 1.67×（18 个算子改后；达到预期的 70%，带宽归一化效率 6 / 32 / 6） |
+| 初步测试改后的大形状耗时比 | 没有汇总（只有 3 个算子有改后的数据） | 1.67×（18 个算子改后；达到预期的 70%，带宽归一化效率 6 / 32 / 6）；按合入状态约 1.86×（`context_attention` 换成合入版的 fp32 实测值） |
 
 带宽归一化效率 = (4090 耗时 ÷ AMD 耗时) ÷ (AMD 峰值带宽 ÷ 4090 峰值带宽)，只看大形状。等于 1 表示带宽利用率与 4090 相同；对计算型算子只能用来排序。
 
@@ -58,7 +60,7 @@
 
 | 批次 | 判断依据 | 个数 | 算子 |
 |---|---|---:|---|
-| 第一批 | 已做初步测试，按算子不同大约快 1.2–18.5 倍 | 18 | `context_attention`（4.6–18.5×）、`fused_moe_gemm`（T ≥ 8 时 2.0–17.2×）、`fused_moe_router_tensorcore`（7.8–11.0×）、`causal_conv1d_fn`（4.5–9.4×）、`decode_grouped_attention`（batch 1、8 时 5.5×、2.0×，batch ≥ 64 时 1.0–1.1×）、`decode_attention`（batch 1 时 3.2×，其余 1.1–1.2×）、`extend_attention`（1.3–2.2×）、`chunk_state_varlen`（1.5–2.4×）、`w8a8_block_int8_matmul`（1.4–1.5×）、`chunked_sgmv_expand`（1.8–1.9×）、`gate_up_lora_b`（1.1–1.6×）、`sgemm_lora_b`（只有小形状，1.1–1.7×）、`per_group_transpose`（最大形状 1.4×）、`bmm_chunk`（1.2×）、`fused_rmsnorm`（1.2×）、`silu_and_mul`（1.2–1.4×）、`log_scaling_tau`（最大形状 1.2×）、`fused_moe_router_cudacore`（大形状不变，两个小形状 1.8×、14.5×） |
+| 第一批 | 已做初步测试，按算子不同大约快 1.2–18.5 倍；已全部进入 PR（四个已合入、一个在审），PR 版本的加速比见 W7900D 文档 | 18 | `context_attention`（原型 4.6–18.5×，合入版 fp32 输入 1.2–3.0×）、`fused_moe_gemm`（T ≥ 8 时 2.0–17.2×）、`fused_moe_router_tensorcore`（7.8–11.0×）、`causal_conv1d_fn`（4.5–9.4×）、`decode_grouped_attention`（batch 1、8 时 5.5×、2.0×，batch ≥ 64 时 1.0–1.1×）、`decode_attention`（batch 1 时 3.2×，其余 1.1–1.2×）、`extend_attention`（1.3–2.2×）、`chunk_state_varlen`（1.5–2.4×）、`w8a8_block_int8_matmul`（1.4–1.5×）、`chunked_sgmv_expand`（1.8–1.9×）、`gate_up_lora_b`（1.1–1.6×）、`sgemm_lora_b`（只有小形状，1.1–1.7×）、`per_group_transpose`（最大形状 1.4×）、`bmm_chunk`（1.2×）、`fused_rmsnorm`（1.2×）、`silu_and_mul`（1.2–1.4×）、`log_scaling_tau`（最大形状 1.2×）、`fused_moe_router_cudacore`（大形状不变，两个小形状 1.8×、14.5×） |
 | 第二批 | 要改编译器或数据布局。推算可快 1.47 倍，与第四批相当；初步测试中跳过 `optimize_epilogue` 只快 1.03–1.11 倍，改分块没有收益 | 1 | `chunk_state` |
 | 第三批 | 要改写 kernel，推算可快 1.7 倍以上 | 12 | `chain_speculative_sampling`、`merge_state`、`fla_layernorm_gated`、`mrope_fused`、`ernie45_rope_fused`、`silu_and_mul_masked`、`per_token_quant_int8`、`qkv_lora_b`、`state_passing`、`mamba_layernorm_gated`、`per_token_group_quant_int8`、`embedding_lora_a` |
 | 第四批 | 推算可快 1.2–1.7 倍 | 10 | `chunk_local_cumsum_vector`、`fused_norm_rope_stacked`、`fused_dual_residual_rmsnorm`、`moe_fused_mul_sum`、`rotary_embedding`、`apply_token_bitmask`、`chunk_scaled_dot_kkt`、`selective_state_update`、`hc_head`、`draft_topk1` |
@@ -95,7 +97,7 @@
 
 | 算子 | 用途 | R9700：大形状是 4090 的倍数 | R9700：可快 | W7900D：大形状是 4090 的倍数 | W7900D：可快 | 改法和两张卡的差别 |
 |---|---|---:|---|---:|---|---|
-| `context_attention` | 注意力 | 10.68 → 4.16 | 初测 2.23–3.11×（第一批） | 8.67 → 0.87 | 初测 4.64–18.53×（第一批） | fp32 输入的 `tl.dot` 编译成 FMA，只用到 FP32 峰值的 3.8%–4.4%。R9700 改用 bf16x3，改后仍是 4090 的 3.6 倍，还有空间。W7900D 上 bf16x3 反而慢（0.44–0.69×），改用 fp16 WMMA（fp32 累加），再去掉主机同步、让同一 (序列, 头) 的 query 块在网格中相邻、K/V 先整体转成 fp16，最大形状比 4090 快 3.0 倍。后几项与 dot 的精度无关，R9700 上应同样有收益，没有测 |
+| `context_attention` | 注意力 | 10.68 → 4.16 | 初测 2.23–3.11×（第一批） | 8.67 → 0.87 | 初测 4.64–18.53×（第一批）；合入版 fp32 输入 1.23–2.98× | fp32 输入的 `tl.dot` 编译成 FMA，只用到 FP32 峰值的 3.8%–4.4%。R9700 改用 bf16x3，改后仍是 4090 的 3.6 倍，还有空间。W7900D 上 bf16x3 反而慢（0.44–0.69×），改用 fp16 WMMA（fp32 累加），再去掉主机同步、让同一 (序列, 头) 的 query 块在网格中相邻、K/V 先整体转成 fp16，最大形状比 4090 快 3.0 倍。后几项要在寄存器溢出降下来之后才见效：W7900D 上 dot 仍按 fp32 FMA 算、每条 lane 溢出 2.6 KB 时，它们只让大形状快 0.98–1.33×，所以在 R9700 的 bf16x3 写法上未必有效，没有测。合入的 #199 没有用 fp16 写法：fp16、bf16 输入走输入类型的 WMMA（8.25–20.43×），fp32 输入保持 fp32（32×32 或 16×16 的 FMA 分块，大形状 1.23–2.98×，改后约为 4090 的 5.3 倍） |
 | `fused_moe_router_tensorcore` | MoE | 7.88 → 1.31（bf16x3）、0.64（分块求和） | 初测 5.04–7.17×（bf16x3）、10.56–14.31×（分块求和）（第一批） | 9.97 → 1.06 | 初测 7.76–11.01×（第一批） | 上游把 bf16 输入提升成 fp32 再按 FMA 算。两张卡都可以直接用 bf16 WMMA、按 K 分块求和。R9700 上分块求和在 M=4096 的测试用例上略超容差（容差占比 1.01，W7900D 上 0.88），只用 bf16x3 时是 5.04–7.17× |
 | `causal_conv1d_fn` | Mamba | 4.84 → 1.61 | 初测 2.24–4.07×（第一批） | 10.00 → 1.52 | 初测 4.54–9.35×（第一批） | 两张卡用同一规则：BLOCK_D=1，BLOCK_T 按最大序列长度取，只改启动参数。最大形状的峰值带宽利用率 R9700 从 21% 升到 84%，W7900D 从 7% 升到 65% |
 | `fused_moe_gemm` | MoE | 2.25 | 推算约 22×（第二批） | 1.57 → 0.40 | 初测 T ≥ 8 时 2.00–17.18×，T=1 不变（第一批） | 上游每个 (token, slot) 单独做 GEMV，三张卡都只用到矩阵峰值的 1.5%–3.6%。改成先按专家排序、再用 `tl.dot` 的分组 GEMM，与硬件无关；W7900D 上 T=4096 到 BF16 峰值的 63%，比 4090 快 13 倍 |
@@ -106,7 +108,7 @@
 
 | 算子 | 用途 | R9700：大形状是 4090 的倍数 | R9700：可快 | W7900D：大形状是 4090 的倍数 | W7900D：可快 | 改法和两张卡的差别 |
 |---|---|---:|---|---:|---|---|
-| `chunked_sgmv_expand` | LoRA | 2.24 | 推算 1.42×（第三批） | 2.87 → 1.60 | 初测 1.79–1.88×（第一批） | num_warps 从 4 改成 16。两张卡上都有 2 字节标量读写；W7900D 上跳过 `optimize_epilogue` 也快 1.89×，两者能否叠加没有测 |
+| `chunked_sgmv_expand` | LoRA | 2.24 | 推算 1.42×（第三批） | 2.87 → 1.60 | 初测 1.79–1.88×（第一批） | num_warps 从 4 改成 16。两张卡上都有 2 字节标量读写；W7900D 上跳过 `optimize_epilogue` 也快 1.89×。合入的 #256 在 kernel 里用 `tl.split`/`tl.join` 往返累加器，不改编译器就拿到 16 字节读写，大形状 2.28–2.82× |
 | `decode_grouped_attention` | 注意力 | 1.35 | 带宽利用率已高于 4090（第四批） | 1.71 → 1.03 | 初测 batch 1、8：5.49×、1.99×；batch 64–4096：0.98–1.11×；head_dim 512：1.70×（第一批） | batch 1 时上游只有 8 个程序，改成按序列切分（split-KV）。R9700 上大 batch 已高于 4090，小 batch 网格太小的问题应同样存在 |
 | `extend_attention` | 注意力 | 1.81 | 推算 1.15×（第四批） | 2.73 → 1.73 | 初测 1.28–2.20×（第一批） | 上游先用单独的 kernel 把前缀 K/V 拷成连续的缓冲区（只到峰值带宽的 4%–21%），每个 query 头又各读一遍 K/V。改成在 attention kernel 里经 `kv_indices` 直接读前缀，共享一个 KV 头的 query 头放进同一个 tile。与硬件无关，R9700 上应也有收益 |
 | `gate_up_lora_b` | LoRA | 2.33 | 推算 1.48×（第三批） | 3.80 → 2.41 | 初测 1.59×，8 段 × 64 个 token 1.10×（第一批） | num_warps 从 4 改成 16 |
@@ -195,8 +197,8 @@ W7900D 一列是各算子全部形状的几何平均，取自 `opt_w7900d/result
 
 | 改法 | R9700（gfx1201） | W7900D（gfx1100） |
 |---|---|---|
-| `context_attention` 的 dot | bf16x3，初测 2.23–3.11× | fp16 单次 WMMA，初测 2.55–3.59×；bf16x3 反而慢（0.44–0.69×） |
-| `context_attention` 的网格顺序、去掉主机同步、K/V 先转换 | 没有测；与 dot 的精度无关，应同样有收益 | 在 fp16 写法的基础上再快 1.8–6.4× |
+| `context_attention` 的 dot | bf16x3，初测 2.23–3.11× | fp16 单次 WMMA，初测 2.55–3.59×；bf16x3 反而慢（0.44–0.69×）。合入版只对 fp16、bf16 输入用 WMMA，fp32 输入保持 fp32；新 kernel 里 32×16 和 64×32（8 个 warp）的 fp32 分块偶尔会算错整块输出，没有用 |
+| `context_attention` 的网格顺序、去掉主机同步、K/V 先转换 | 没有测；要在寄存器溢出降下来之后才见效，在 bf16x3 写法上未必有效 | 在 fp16 写法的基础上再快 1.8–6.4× |
 | `fused_moe_router_tensorcore` 改用 bf16 WMMA | bf16x3 初测 5.04–7.17×，分块求和 10.56–14.31× | 分块求和初测 7.76–11.01×，bf16x3 3.15–4.29× |
 | `causal_conv1d_fn` 的分块规则 | 同一规则，初测 2.24–4.07× | 同一规则，初测 4.54–9.35× |
 | `fused_moe_gemm` 的分组 GEMM、`extend_attention` 去掉 gather 和合并头、decode 的 split-KV | 没有测；与硬件无关，应同样有收益 | 初测：`fused_moe_gemm` T ≥ 8 时 2.00–17.18×，`extend_attention` 1.28–2.20×，decode batch 1 时 3.23–5.49× |
@@ -204,13 +206,14 @@ W7900D 一列是各算子全部形状的几何平均，取自 `opt_w7900d/result
 | `fused_moe_router_cudacore` 的 4 个 warp | 同样溢出约 2 KB，应同样有收益，没有测 | 初测 [83, 512] × 32 个专家 14.50× |
 | 各算子的 num_warps（LoRA 16 个、`bmm_chunk` 1 个、`silu_and_mul` 16 个、decode 4 个等） | 要重新扫 | 按 gfx1100 测出 |
 | `chunk_state_varlen` 的分块 | 有没有 LDS 转置的问题没有核对 | 两个 dot 的操作数都经 LDS 转置；改分块初测 1.51–2.42× |
-| WMMA kernel 的写回 | 主要是 16 字节向量写 | 2 或 4 字节标量写；跳过 `optimize_epilogue` 因 kernel 而异（0.90–2.04×），要改 Triton |
+| WMMA kernel 的写回 | 主要是 16 字节向量写 | 2 或 4 字节标量写；跳过 `optimize_epilogue` 因 kernel 而异（0.90–2.04×），要改 Triton，或在 kernel 里 `tl.split`/`tl.join` 往返累加器（#256 的做法，要显式写 `tl.fma` 尾声才能与上游逐位一致） |
+| 移植进上游后的作用范围 | gfx1201 不在 `ARCH_MAP` 里，仍走通用实现 | 只有 gfx1100 映射到 rdna3 后端（#199），第一批 18 个算子走 `_amd/rdna3/ops/` |
 | scratch 门槛 | 约 2.2 KB（推算）；`context_attention` 上游版本溢出 2648 B，也超过，4 头的小形状可能也受影响 | 1493 B；超过的 kernel 每次启动多花约 150–200 µs |
 
 ## 潜力判断的不确定性
 
 - 「推算」都是上限，偏乐观：W7900D 上调参数的访存型算子除 `causal_conv1d_fn` 外只快 1.0–1.4 倍（推算 1.6–3.1 倍），R9700 上 `gelu_and_mul` 也没有兑现。第三、四批的实际收益要改写后才知道。
 - W7900D 上的改法都没有在 R9700 上测过，第二批在 R9700 上能快多少还不知道。
-- `context_attention` 在 W7900D 上的收益依赖 fp16：q、k、v 中绝对值超过 65504 的元素会溢出成 inf，真实模型的激活是否在这个范围内没有确认；不能用 fp16 时，只改分块大形状快 1.10–2.21 倍。K/V 先转换另需显存，最大的形状 2.1 GB。
+- `context_attention` 在 W7900D 上的收益依赖 fp16：q、k、v 中绝对值超过 65504 的元素会溢出成 inf，真实模型的激活是否在这个范围内没有确认；不能用 fp16 时，只改分块大形状快 1.10–2.21 倍。K/V 先转换另需显存，最大的形状 2.1 GB。这一条只对原型成立：合入的 #199 对 fp32 输入保持 fp32，没有这个风险，代价是 fp32 大形状只快 1.23–2.98 倍。
 - `fused_moe_router_tensorcore` 的分块求和在 M=4096 的测试用例上余量很小（fp32 参考本身相对 fp64 已用掉 93%–97% 的容差），R9700 上这个用例略超容差；只能用 bf16x3 时，R9700 上的收益约为分块求和的一半（5.04–7.17×）。
-- 初步测试只在 benchmark 的形状上比较过耗时（`causal_conv1d_fn` 的分块规则、split-KV 的配置、`per_group_transpose` 的 2^24 门槛等），实际模型的形状上收益可能不同。
+- 初步测试只在 benchmark 的形状上比较过耗时（`causal_conv1d_fn` 的分块规则、split-KV 的配置、`per_group_transpose` 的 2^24 门槛等），实际模型的形状上收益可能不同。W7900D 的 PR 阶段补了 benchmark 以外的形状（每个算子 10–137 个，见 W7900D 文档各 PR 小节），R9700 上没有。
