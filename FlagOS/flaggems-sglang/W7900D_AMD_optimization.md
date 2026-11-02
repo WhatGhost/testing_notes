@@ -2,7 +2,7 @@
 
 依据三类材料：RTX 4090 与 W7900D 两份报告中同样 484 个形状的 kernel 模式延迟；本机 Triton 缓存中 W7900D 测试时实际编译的 1257 个 gfx1100 kernel 版本（含 autotune 的全部候选；R9700 文档中 W7900D 的编译数字是把 TTIR 离线编译得到的 580 个版本，不含三个候选很多的 autotune kernel）；以及在 W7900D 上的两轮原型验证。第一轮基本沿用 R9700 文档的思路，改了 8 个算子，另外测了 5 个带 autotune 的算子实际选中的配置、跳过 AMD 后端 `optimize_epilogue` pass 的写回对照，并找到 R9700 文档没有提到的一个问题：寄存器溢出较多的 kernel 每次启动都要重新分配 scratch。第二轮不拘泥于 R9700 文档的改法，从耗时的构成、网格大小和编译出的指令入手，改写了 `context_attention`、`fused_moe_gemm`、`extend_attention` 和两个 decode 算子的算法或网格，查到了 `chunk_state_varlen` 慢的原因，并对全部 56 个算子扫了一遍 num_warps；又改了 10 个算子，`context_attention` 换成更快的写法。两轮共 18 个算子的改动套到同一个包副本（v2）上，跑了上游的完整测试、官方 benchmark，并对每个 benchmark 形状重复调用 100 次、检查结果逐位一致（见「第二轮：不按 R9700 文档的改法」）。v2 包让 100 个大形状的耗时从 4090 的 2.51 倍降到 1.67 倍（几何平均）。其余「可快多少」仍是按带宽或算力利用率推算的上限。
 
-**落地情况（2026-11-02）**：这 18 个算子已分五个 PR 移植进上游的 rdna3 后端（`_amd/rdna3/ops/`，只在 gfx1100 上生效）：[#199](https://github.com/flagos-ai/FlagGems-sglang/pull/199)、[#205](https://github.com/flagos-ai/FlagGems-sglang/pull/205)、[#231](https://github.com/flagos-ai/FlagGems-sglang/pull/231) 已合入，[#256](https://github.com/flagos-ai/FlagGems-sglang/pull/256) 在审，注意力一组（`decode_attention`、`decode_grouped_attention`、`extend_attention`、`log_scaling_tau`）在分支 `feat/amd-gfx1100-attention` 上验证完、尚未提交。PR 中的实现与 v2 包不完全相同，各算子的落地版本和实际加速比见「第一批」的第一张表，各 PR 中的新改动和新发现见「第一个 PR（#199）」「MoE PR」「Mamba PR」「LoRA 与访存算子 PR」「注意力 PR」几节。差别最大的是 `context_attention`：合入的版本让 fp32 输入保持 fp32 计算，benchmark（只列 fp32）的大形状快 1.23–2.98 倍，而不是 v2 包把 fp32 输入转成 fp16 时的 4.64–18.53 倍；按合入状态，100 个大形状的耗时约为 4090 的 1.86 倍（只把 `context_attention` 换成 #199 的实测值、其余算子仍按 v2 包估算）。本文第一轮、第二轮和分析各节中的数字仍是原型阶段的，除非另行注明。
+**落地情况（2026-11-02）**：这 18 个算子已分五个 PR 移植进上游的 rdna3 后端（`_amd/rdna3/ops/`，只在 gfx1100 上生效）：[#199](https://github.com/flagos-ai/FlagGems-sglang/pull/199)、[#205](https://github.com/flagos-ai/FlagGems-sglang/pull/205)、[#231](https://github.com/flagos-ai/FlagGems-sglang/pull/231)、[#256](https://github.com/flagos-ai/FlagGems-sglang/pull/256) 已合入，注意力一组（`decode_attention`、`decode_grouped_attention`、`extend_attention`、`log_scaling_tau`）是 [#271](https://github.com/flagos-ai/FlagGems-sglang/pull/271)，在审。PR 中的实现与 v2 包不完全相同，各算子的落地版本和实际加速比见「第一批」的第一张表，各 PR 中的新改动和新发现见「第一个 PR（#199）」「MoE PR」「Mamba PR」「LoRA 与访存算子 PR」「注意力 PR」几节。差别最大的是 `context_attention`：合入的版本让 fp32 输入保持 fp32 计算，benchmark（只列 fp32）的大形状快 1.23–2.98 倍，而不是 v2 包把 fp32 输入转成 fp16 时的 4.64–18.53 倍；按合入状态，100 个大形状的耗时约为 4090 的 1.86 倍（只把 `context_attention` 换成 #199 的实测值、其余算子仍按 v2 包估算）。本文第一轮、第二轮和分析各节中的数字仍是原型阶段的，除非另行注明。
 
 实验都在 PCI 地址 0000:e3:00.0 的 W7900D 上进行：脚本按 PCI 地址在 KFD 拓扑中找到这张卡，运行时得出它的 HIP 序号（本次为 7，换机器或重启后可能不同），确认没有其他进程占用它的显存，并用 numactl 绑定到它所在的 NUMA 节点 1（`opt_w7900d/run_proto.sh`），进入 torch 后再按 PCI 地址核对一次（`harness.check_device`）。上游代码 `FlagGems-sglang-b7a575a/` 没有修改：原型改的是模块或包的副本（`opt_w7900d/patched/`），或者用不同的启动参数调用上游 kernel；结束时上游目录 683 个文件的校验和与开始时相同，目录里也没有留下测试或 benchmark 的结果文件。
 
@@ -37,7 +37,7 @@ v2 包一行的大形状中，改过的 17 个算子（`sgemm_lora_b` 没有大�
 
 ## 详细分析：结论
 
-- 落地：第一批 18 个算子已分五个 PR 移植进上游的 rdna3 后端，三个已合入、一个在审、一个待提交（见「第一批」）。PR 阶段在原型之外又有几处改进和发现：`context_attention` 的 fp32 输入保持 fp32，并查到两种 fp32 分块会偶尔算错整块输出（「第一个 PR（#199）」）；WMMA 的累加改成每个 K 块单独求和（「MoE PR 中的两个发现」）；不改编译器、用 `tl.split`/`tl.join` 拿到 16 字节写回（「LoRA 与访存算子 PR」）；split-KV 按能否填满 96 个 CU 选 head 块、上游 `decode_attention` 的 fp32 输入在 gfx1100 上因 LDS 超限直接崩溃（「注意力 PR 中的改动和发现」）。下面各条记录的是原型阶段的结论和数字。
+- 落地：第一批 18 个算子已分五个 PR 移植进上游的 rdna3 后端，四个已合入、一个在审（见「第一批」）。PR 阶段在原型之外又有几处改进和发现：`context_attention` 的 fp32 输入保持 fp32，并查到两种 fp32 分块会偶尔算错整块输出（「第一个 PR（#199）」）；WMMA 的累加改成每个 K 块单独求和（「MoE PR 中的两个发现」）；不改编译器、用 `tl.split`/`tl.join` 拿到 16 字节写回（「LoRA 与访存算子 PR」）；split-KV 按能否填满 96 个 CU 选 head 块、上游 `decode_attention` 的 fp32 输入在 gfx1100 上因 LDS 超限直接崩溃（「注意力 PR 中的改动和发现」）。下面各条记录的是原型阶段的结论和数字。
 - AMD 后端原来没有任何专门实现，AMD 上的 56 个算子全部走通用实现，参数是按别的芯片选的（见 R9700 文档）。W7900D 上只改启动参数（分块、warp 数、流水级数），`causal_conv1d_fn`、`w8a8_block_int8_matmul`、`fused_moe_router_cudacore`、`silu_and_mul`、`fused_rmsnorm`、`per_group_transpose` 的大形状或个别慢形状就快 1.2–14 倍，其中 `causal_conv1d_fn`、`w8a8_block_int8_matmul`、`silu_and_mul`、`per_group_transpose` 的结果与上游逐位相同。第二轮对全部 56 个算子扫了一遍 num_warps（1–16），又有几个只改 warp 数就明显变快：LoRA 的 `chunked_sgmv_expand`、`gate_up_lora_b`、`sgemm_lora_b` 用 16 个 warp 快 1.59–1.88 倍，`bmm_chunk` 用 1 个 warp 快 1.22–1.24 倍，`log_scaling_tau` 网格大时用 16 个 warp 快 1.18 倍，结果都与上游逐位相同；`chunk_state_varlen` 只改分块（每块 1 个头、K 步长 16、1 级流水）快 1.51–2.42 倍，也逐位相同。
 - 第二轮收益最大的是改算法和网格，这几处 R9700 文档没有提到，与硬件无关，4090 上应同样有效（没有测）：
   - `context_attention`：在 fp16 WMMA 的基础上去掉主机同步，让同一 (序列, 头) 的 query 块在网格中相邻、共享缓存中的 K/V，head_dim > 64 时把 K、V 先整体转成 fp16（在 kernel 里转换 fp32 的 K/V，head_dim > 64 的版本每条 lane 溢出 1052–1204 字节，先转之后 100–216 字节）。大形状快 4.64–18.53 倍、小形状 6.08–15.96 倍，比第一轮的 fp16 写法又快 1.8–6.4 倍；最大形状到 FP16 矩阵峰值的 41%，比 4090 快 3.0 倍。合入的 #199 只在 fp16、bf16 输入上这样做（大形状快 8.25–20.43 倍），fp32 输入保持 fp32 计算，只保留去掉同步、不重复读 K/V 等改动，benchmark（只列 fp32）的大形状快 1.23–2.98 倍、小形状 6.60–15.92 倍。
@@ -74,13 +74,13 @@ v2 包一行的大形状中，改过的 17 个算子（`sgemm_lora_b` 没有大�
 | [#231](https://github.com/flagos-ai/FlagGems-sglang/pull/231) | 2026-10-28 合入 | `causal_conv1d_fn` | 4.58–9.09× | 同 v2，只换启动参数，逐位一致 |
 |  |  | `chunk_state_varlen` | 1.53–2.42× | 分块同 v2（K 步 16、1 级流水），只在 dstate ≥ 128 时用，更小的状态保持上游的启动参数；逐位一致 |
 |  |  | `bmm_chunk` | 1.22–1.23×（fp32 3.34–3.37×） | v2 一律 1 个 warp；PR 只在更快的形状上减少 warp，fp32 的 K 步改成 16，单个 warp 不再溢出；逐位一致 |
-| [#256](https://github.com/flagos-ai/FlagGems-sglang/pull/256) | 在审 | `chunked_sgmv_expand` | 2.28–2.82×（fp32 5.77–20.59×） | v2 只改 warp 数；PR 用 `tl.split`/`tl.join` 换 16 字节读写、不再先 clone 输出，fp32 改成小 tile 的 FMA；逐位一致 |
+| [#256](https://github.com/flagos-ai/FlagGems-sglang/pull/256) | 2026-11-02 合入 | `chunked_sgmv_expand` | 2.28–2.82×（fp32 5.77–20.59×） | v2 只改 warp 数；PR 用 `tl.split`/`tl.join` 换 16 字节读写、不再先 clone 输出，fp32 改成小 tile 的 FMA；逐位一致 |
 |  |  | `gate_up_lora_b` | 1.31–1.76×（fp32 最多 16.85×） | 同上 |
 |  |  | `sgemm_lora_b` | 较大的两个形状 1.46×、2.05× | 同上 |
 |  |  | `per_group_transpose` | 最大形状 1.29× | 启动参数按形状选；逐位一致 |
 |  |  | `silu_and_mul` | 最多 1.40× | 同上 |
 |  |  | `fused_rmsnorm` | 最多 1.23× | 同上；一行内求和顺序变了，不逐位一致 |
-| 待提交 | 分支 `feat/amd-gfx1100-attention` | `decode_attention` | 1.09–3.44×；fp32 上游崩溃、本次能跑 | split-KV 的配置规则重写（按能否填满 96 个 CU 选 head 块，K/V 分块统一 32 个 token）；fp32 用不分块的 kernel |
+| [#271](https://github.com/flagos-ai/FlagGems-sglang/pull/271) | 在审 | `decode_attention` | 1.09–3.44×；fp32 上游崩溃、本次能跑 | split-KV 的配置规则重写（按能否填满 96 个 CU 选 head 块，K/V 分块统一 32 个 token）；fp32 用不分块的 kernel |
 |  |  | `decode_grouped_attention` | 1.01–5.43×（fp16 最多 62.74×，fp32 最多 15.00×） | 同上；fp32 也走 split-KV |
 |  |  | `extend_attention` | 1.36–2.67×（fp32 1.69–5.79×） | 输出不再先清零；fp32 也走合并头的 kernel（tile 减半、warp 加倍） |
 |  |  | `log_scaling_tau` | 最大形状 1.51×（fp16 1.33×） | 改写成一个 kernel，一行切成 512 个元素的段；逐位一致 |
@@ -744,7 +744,7 @@ v2 包（`patched/FlagGems-sglang-w7900d-v2/`）改了 18 个算子的文件，�
 
 ## MoE PR 中的两个发现
 
-把 `fused_moe_gemm`、`fused_moe_router_tensorcore`、`fused_moe_router_cudacore` 移植到上游的 rdna3 后端时（上游 b908cb3，分支 `feat/amd-gfx1100-moe`），又查到两件与 gfx1100 的 WMMA 有关的事。脚本和结果在 `opt_w7900d/pr3/` 和 `opt_w7900d/pr3/results/`；实验分在这台机器的几张空闲卡上，都按 PCI 地址确认没有其他进程占用，并绑定到所在的 NUMA 节点（`pr3/run.sh`）。
+把 `fused_moe_gemm`、`fused_moe_router_tensorcore`、`fused_moe_router_cudacore` 移植到上游的 rdna3 后端时（上游 b908cb3，分支 `feat/amd-gfx1100-moe`，#205，2026-10-22 合入），又查到两件与 gfx1100 的 WMMA 有关的事。脚本和结果在 `opt_w7900d/pr3/` 和 `opt_w7900d/pr3/results/`；实验分在这台机器的几张空闲卡上，都按 PCI 地址确认没有其他进程占用，并绑定到所在的 NUMA 节点（`pr3/run.sh`）。
 
 ### WMMA 往 fp32 累加器里加数时偏向 0
 
@@ -825,7 +825,7 @@ bf16 最大形状从 1350.2 µs 降到 903.5 µs；另外 3 个 benchmark 形状
 
 ## Mamba PR：只改启动参数，输出逐位一致
 
-把 `causal_conv1d_fn`、`chunk_state_varlen`、`bmm_chunk` 移植到 rdna3 后端时（分支 `feat/amd-gfx1100-mamba`），三个算子都沿用上游的 kernel，只换启动参数，所以输出与上游逐位相同。脚本和结果在 `opt_w7900d/pr4/`。
+把 `causal_conv1d_fn`、`chunk_state_varlen`、`bmm_chunk` 移植到 rdna3 后端时（分支 `feat/amd-gfx1100-mamba`，#231，2026-10-28 合入），三个算子都沿用上游的 kernel，只换启动参数，所以输出与上游逐位相同。脚本和结果在 `opt_w7900d/pr4/`。
 
 - `causal_conv1d_fn`：上游固定 128 个 token × 4 个通道一块。改成时间方向的分块跟着最长的序列走，每个程序读连续的通道行。
 - `chunk_state_varlen`：dstate ≥ 128 时改用更小的 tile、K 方向每步 16 个 token、1 级流水；更小的状态仍用上游的启动参数。
@@ -844,7 +844,7 @@ bf16 最大形状从 1350.2 µs 降到 903.5 µs；另外 3 个 benchmark 形状
 
 ## LoRA 与访存算子 PR：用 `tl.split`/`tl.join` 换宽写回，再用 `tl.fma` 换回逐位一致
 
-把 `chunked_sgmv_expand`、`gate_up_lora_b`、`sgemm_lora_b`、`per_group_transpose`、`silu_and_mul`、`fused_rmsnorm` 移植到 rdna3 后端时（上游 d2529b3，分支 `feat/amd-gfx1100-lora-memory`），前三个 LoRA 算子找到一个不用改 Triton 就能拿到宽写回的办法，后三个访存算子只换启动参数。脚本和结果在 `opt_w7900d/pr5/`。
+把 `chunked_sgmv_expand`、`gate_up_lora_b`、`sgemm_lora_b`、`per_group_transpose`、`silu_and_mul`、`fused_rmsnorm` 移植到 rdna3 后端时（上游 d2529b3，分支 `feat/amd-gfx1100-lora-memory`，#256，2026-11-02 合入），前三个 LoRA 算子找到一个不用改 Triton 就能拿到宽写回的办法，后三个访存算子只换启动参数。脚本和结果在 `opt_w7900d/pr5/`。
 
 ### 不改编译器也能避开 2 字节写回
 
@@ -907,7 +907,7 @@ accumulator = tl.reshape(tl.join(low, high), (block_m, block_n))
 
 ## 注意力 PR 中的改动和发现
 
-把 `decode_attention`、`decode_grouped_attention`、`extend_attention`、`log_scaling_tau` 移植到上游的 rdna3 后端时（上游 d2529b3，分支 `feat/amd-gfx1100-attention`），v2 包的四个原型都做了改动，另外查到一处上游在 gfx1100 上的崩溃。脚本和结果在 `opt_w7900d/pr6/` 和 `opt_w7900d/pr6/results/`；每次实验前按 KFD 的 `vram_<gpu_id>` 确认整张卡没有其他进程占用，一次只用一张卡，并绑定到所在的 NUMA 节点（`pr6/run.sh`）。
+把 `decode_attention`、`decode_grouped_attention`、`extend_attention`、`log_scaling_tau` 移植到上游的 rdna3 后端时（基于上游 d2529b3 开发，提交前变基到 7e9943f，分支 `feat/amd-gfx1100-attention`，#271 在审），v2 包的四个原型都做了改动，另外查到一处上游在 gfx1100 上的崩溃。脚本和结果在 `opt_w7900d/pr6/` 和 `opt_w7900d/pr6/results/`；每次实验前按 KFD 的 `vram_<gpu_id>` 确认整张卡没有其他进程占用，一次只用一张卡，并绑定到所在的 NUMA 节点（`pr6/run.sh`）。
 
 ### split-KV 的启动规则：从能否填满 96 个 CU 反推 head 块
 
