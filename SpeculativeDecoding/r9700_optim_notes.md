@@ -29,7 +29,9 @@ R9700 上投机解码和推理性能的工作记录：做了什么、结论和�
 | 4 | AITER Unified 后端支持 non-causal | vLLM（可选 AITER） | R9700 上走 vLLM 的 Triton 回退，预计没有性能收益 | R9700 暂不做；MI355 侧在做（`mi355_spec_optim_progress.md` 的候选 4） |
 | 5 | R9700 的 fused_moe 调优配置（Qwen3.6-35B-A3B） | 配置文件 | 单卡 int4：kernel 1.18–1.63 倍，端到端 conc 4–32 +8–12%。TP=4 BF16：kernel 1.01–1.16 倍 | int4 和 [#64045](https://github.com/vllm-project/vllm/pull/64045) 重复，11-03 已评论支持并建议补 `"512"`；BF16 TP=4 不提交 |
 | 6 | ROCm 后端支持 fused multi-step draft decode | 评估 | R9700 上没有收益，和 MI355X 的结论一致 | 不做 |
-| 7 | 投机解码的快/慢两种状态和 `GPU_MAX_HW_QUEUES` | 根因排查 | 默认环境下每段随机落在快态或慢态（差约 12%）；`GPU_MAX_HW_QUEUES=1` 或 `2` 稳定在快态 | 未报 issue。TP=4 加 `GPU_MAX_HW_QUEUES=1` 时机器死机过一次 |
+| 7 | 快/慢两种状态和 `GPU_MAX_HW_QUEUES` | 根因排查 + 部署建议 | 默认环境下性能随机落在快态或慢态；`GPU_MAX_HW_QUEUES=1` 稳定在快态。单卡 Qwen3.6 int4 同一时段对比：不开投机 conc 1/4 快 25%/31%，MTP conc 1 快 14%，其余 +3–5% | 单卡部署建议设；未报 issue。TP=4 加它时机器死机过一次 |
+| 8 | 单卡 MTP 的显存开销（Qwen3.6 GDN 混合模型） | 根因排查 | 开 MTP 后 KV 容量 −63%：GDN 投机状态每个请求多 9 块，草稿层 BF16 权重 1.6 GiB，CUDA graph 多 1.7 GiB；conc 32 比不开投机慢 11% | 进行中：在测不改代码的参数 |
+| 9 | EAGLE-4 在 ROCm 上的支持（Larry 的 PR 之外） | 候选 | #64844 合入后 ROCm 的 attention 后端只支持 chain，tree verify 会降级 | 未开始；先和 Larry 对齐分工 |
 
 ## 后续能做的
 
@@ -37,14 +39,17 @@ R9700 上投机解码和推理性能的工作记录：做了什么、结论和�
 
 1. #62799 rebase 解决冲突，跟进 review（第 1 条）。
 2. 跟进 #64045 对 `"512"` 条目的回复（第 5 条）。
-3. 在同一时段对比默认环境和 `GPU_MAX_HW_QUEUES=1`（Qwen3.6 int4 单卡）。目前 conc 1 的 69 对 53 tok/s 是跨日期、跨卡的对比（第 7 条）。
+3. 第 8 条：测完不改代码的参数后，评估 GDN 投机状态的代码改法（投机解码版的 GDN ReplaySSM，或只在 verify 那一步持有草稿状态）。
 4. 决定是否报 hipBLASLt 的 issue（第 2 条）、是否发 #61433 的评审评论（第 3 条）、是否给 ROCm 报快/慢状态的 issue（第 7 条）。
 5. skinny GEMM 扩到 129–256 行（按形状查表；原型在 DSpark conc 32 每步 −16%），384–512 行另想方案，并验证 gfx1200 和 RDNA3（第 1 条"后续"）。
 6. 调 MTP 草稿层用的 BF16 MoE 配置 `E=256,N=512,device_name=AMD_Radeon_R9700.json`（第 5 条）。
 7. MI355 侧的第 4 条方案落地后，在 R9700 上确认 DSpark 草稿仍选 TRITON_ATTN、性能不回退。
+8. 第 9 条：EAGLE-4 的 ROCm tree verify（TRITON_ATTN）和 GDN tree kernel 的 ROCm 验证，先和 Larry 对齐分工。
 
 ## 更新记录
 
+> **2026-11-03（二）**：第 7 条补了单卡 Qwen3.6 int4 的同一时段对比，`GPU_MAX_HW_QUEUES=1` 的收益得到确认；新增第 8 条（单卡 MTP 的显存开销，进行中）和第 9 条（EAGLE-4 在 ROCm 上的支持，候选）。
+>
 > **2026-11-03**：文档由 `pr_candidates.md` 改名，加了"当前状态"和"后续能做的"。第 1 条已提交为 #62799；第 5 条完成（int4 配置和 #64045 重复，已评论）；新增第 6 条（fused multi-step draft decode）和第 7 条（快/慢状态）。
 >
 > **2026-10-20 更新（二）**：补完了之前因为机器卡住没跑的测试。
@@ -73,6 +78,8 @@ R9700 上投机解码和推理性能的工作记录：做了什么、结论和�
 | 5 | Optimize dense MLP and MoE execution（P0）；Support W4A16 on Radeon for larger models（P3） |
 | 6 | Extend HIP Graph coverage to draft models（P1） |
 | 7 | 没有直接对应的条目；影响所有 R9700 上的性能测量 |
+| 8 | Reduce resident GDN/Mamba speculative-state overhead（P1） |
+| 9 | Optimize attention kernels in baseline and speculative execution（P1）：多 token 和 tree verify |
 
 ---
 
@@ -572,9 +579,22 @@ K=7 吞吐（tok/s，第一轮 / 第二轮）：
 
 - EAGLE3 conc 16：默认 53.1–53.4 ms（487–499 tok/s），`GPU_MAX_HW_QUEUES=1` 是 47.5 ms（546–552 tok/s），快约 11%。两组不在同一张卡上。
 - 不开投机 conc 1：默认和 `GPU_MAX_HW_QUEUES=1` 都是 25.1 ms。
-- Qwen3.6 int4 单卡（第 5 条）：
-  - `GPU_MAX_HW_QUEUES=1` 时两轮相差不到 1.5%；默认环境下同一组各轮最多差 25%，不开投机也是这样。
-  - conc 1 的 69 对 53 tok/s 是跨日期、跨卡的对比（10-26 在 HIP 4/5，10-27 在 HIP 5/6），还没在同一时段对比过。
+
+### 单卡 Qwen3.6 int4 的同一时段对比（11-03）
+
+`palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4`，调过的 MoE 配置，ShareGPT。每张卡上默认环境和 `GPU_MAX_HW_QUEUES=1` 交替跑，各 3 轮；不开投机在 HIP 0，MTP（3 个草稿 token）在 HIP 1。先空启动一次预热编译缓存。输出 tok/s 均值：
+
+| conc | 不开投机：默认 → hwq1 | MTP：默认 → hwq1 |
+|---|---|---|
+| 1 | 58.0 → 72.7（+25.4%） | 86.8 → 99.3（+14.4%） |
+| 4 | 140.6 → 184.7（+31.4%） | 208.5 → 213.9（+2.6%） |
+| 16 | 316.9 → 331.0（+4.5%） | 364.0 → 381.3（+4.7%） |
+| 32 | 446.1 → 457.9（+2.6%） | 396.2 → 407.2（+2.8%） |
+
+- 默认环境下同一组 3 轮最多相差 11%；`GPU_MAX_HW_QUEUES=1` 时 0.1–0.4%（MTP conc 32 是 1.2%）。
+- 不开投机 conc 1 的 ITL 中位数从 16.1 ms 降到 13.3 ms。
+- 结论：单卡部署建议设 `GPU_MAX_HW_QUEUES=1`。之前跨日期的"conc 1 快约 30%"这次确认为 +25%。
+- 数据在 `moe_tune/e2e_w4a16/{defenv,hwq1}_{none,mtp}_hq2*`，脚本是 `moe_tune/chain_e2e_w4a16_hwq_alt.sh`。
 
 ### 注意
 
@@ -583,9 +603,78 @@ K=7 吞吐（tok/s，第一轮 / 第二轮）：
 
 ### 后续
 
-- 在同一时段、同一张卡上对比默认环境和 `GPU_MAX_HW_QUEUES=1`，确认它对 MoE int4 模型的影响（包括不开投机的情况）。
-- 确认后给 ROCm 报 issue，附上 `fused_draft/regime/` 的复现脚本。本机 gh 访问不了 ROCm 组织的仓库，要在网页上提。
+- 考虑给 ROCm 报 issue，附上 `fused_draft/regime/` 的复现脚本和上面单卡 Qwen3.6 的数据。本机 gh 访问不了 ROCm 组织的仓库，要在网页上提。
 - 根因还没找到：中断、kernarg、graph packet capture、async scheduling 都排除了，只确认了和 HW queue 数量有关。
+
+---
+
+## 8. 单卡 MTP 的显存开销（Qwen3.6 GDN 混合模型，进行中）
+
+### 现象
+
+单卡 Qwen3.6-35B-A3B GPTQ-Int4，10-26 的启动日志（`GPU_MAX_HW_QUEUES=1`，编译缓存是热的）：
+
+| | 不开投机 | 开 MTP（3 个草稿 token） |
+|---|---|---|
+| 模型权重 | 20.08 GiB | 21.65 GiB（草稿层是 BF16，多 1.6 GiB） |
+| CUDA graph 显存 | 0.28 GiB | 2.02 GiB |
+| KV cache 可用显存 | 8.33 GiB | 4.82 GiB |
+| 日志里的 KV cache 容量 | 30.8 万 token | 11.3 万 token（−63%） |
+
+- 32 并发时请求排队，TTFT 中位数约 6 s（不开投机 0.23 s），吞吐反而比不开投机低 11%（407 对 458 tok/s；11-03 同一时段、`GPU_MAX_HW_QUEUES=1`，两组在不同卡上）。
+- 1–16 并发时 MTP 仍然更快：conc 1 +37%，conc 4 +16%，conc 16 +15%。
+
+### 原因（按 `852989f58` 的代码推算）
+
+- 日志里的"GPU KV cache size: N tokens"是"最多能同时放几个 `max_model_len` 长度的请求"乘以 `max_model_len`。最大并发 = 池里的块数 ÷ 每个请求在所有组里要占的块数（`kv_cache_utils.get_max_concurrency_for_kv_cache_config`）。
+- 层按类型分组，每组的层数取层数最少的那种类型（`kv_cache_planning._get_kv_cache_groups_uniform_page_size`）：
+  - 不开投机：10 层全注意力、30 层 GDN，每组 10 层，共 1 个注意力组加 3 个 GDN 组。
+  - 开 MTP：草稿层多 1 层全注意力，每组变成 11 层（GDN 的最后一组用空层补齐），每块显存多 10%。
+- GDN 状态在 align 模式下（开 prefix caching 时的默认）每个请求占 `2 + num_speculative_blocks` 块（`MambaSpec.max_memory_usage_bytes`），而 `num_speculative_blocks` 就是草稿 token 数（`mamba/abstract.py`）。所以 3 个 GDN 组加起来，每个请求从 6 块变成 15 块。
+- 以一个约 2K token 的请求为例：
+  - 不开投机：占 2 + 6 = 8 块，池里约 413 块，能放约 51 个；
+  - 开 MTP：占 2 + 15 = 17 块，池里约 214 块，只能放约 12 个。
+  - 按这个模型算出的容量比是 0.58 × 0.64 = 0.37，和实测的 0.37 一致。
+- vLLM 里已有的 ReplaySSM（`--use-replayssm`）能让 `num_speculative_blocks` 变成 0，但限制很多：模型要声明 `supports_replayssm`（目前是 Mamba2 和 KDA 模型），投机解码时还要用 FlashInfer 的 Mamba 后端、关掉 prefix caching。Qwen3.5/3.6 的 GDN 不支持。上游给 GDN 做的 ReplaySSM 只覆盖普通 decode（#62004、#64699），投机解码版（#49887）已关闭。
+
+### 正在做
+
+在 HIP 0/1 上测不改代码的参数（`moe_tune/chain_mtp_mem.sh`，`GPU_MAX_HW_QUEUES=1`）：
+
+- 关掉 prefix caching，GDN 每组从 5 块降到 4 块；
+- 用 2 个草稿 token；
+- `--max-num-seqs 32`，少录一些 CUDA graph；
+- `--gpu-memory-utilization 0.95`；
+- 以及这几项的组合。
+
+### 后续
+
+- 参数测完后评估代码层面的改法：给 GDN 做投机解码版的 ReplaySSM（ROCm 上用 Triton），或者只在 verify 那一步临时持有草稿状态（#64844 的 dynamic spec blocks 也是这个方向）。
+- 草稿层的 BF16 权重（1.6 GiB）能不能量化。
+
+---
+
+## 9. EAGLE-4 在 ROCm 上的支持（候选，11-03 调研）
+
+Larry（larryli2-amd）认领了 EAGLE-4 在 vLLM ROCm 上的 6 个坑，共同作者里有你。截至 11-03，都还没有人 review：
+
+| PR | 内容 | 状态 | 适合在哪开发 |
+|---|---|---|---|
+| [#64445](https://github.com/vllm-project/vllm/pull/64445) | MRV2 草稿提议的结构化输出（grammar）桥 | 草稿，需要 rebase | 和硬件无关 |
+| [#64404](https://github.com/vllm-project/vllm/pull/64404) | 把滑窗草稿的 AOT 保护推广到所有草稿模型 | 草稿 | 改的是 CUDA FlashAttention 的路径，ROCm 后端不走 |
+| [#64407](https://github.com/vllm-project/vllm/pull/64407) | AITER FA 的变长 graph 支持加上界 | 草稿 | 只能在 MI300/MI355 上做 |
+| [fork #2](https://github.com/larryli2-amd/vllm/pull/2) | full-attention verify 扩展的接口 | 在 fork 里；基础 #62963 已关闭 | 和硬件无关 |
+| [fork #3](https://github.com/larryli2-amd/vllm/pull/3) | ROCM_ATTN 接上 tree verify | 在 fork 里；依赖 #2 | R9700、MI355 都能跑 |
+| [fork #4](https://github.com/larryli2-amd/vllm/pull/4) | 注册方法的 prefix-cache lookahead | 在 fork 里；基础 #62962 已关闭 | 和硬件无关 |
+
+- **底层接口变了**：#62962、#62963 被 seyfal 的 [#64844](https://github.com/vllm-project/vllm/pull/64844) 取代，它建在已合入的 [#63205](https://github.com/vllm-project/vllm/pull/63205)（MRV2 自定义 speculator）之上。
+  - #64844 给每个 attention 后端加了 `spec_verify_limit`，默认只支持 chain。它只改了 FlexAttention 和 GDN、Mamba2、Mamba 后端，ROCm 的四个后端都没动，所以合入后 ROCm 上的 tree verify 会降级成 chain。
+  - fork 上的 #2–#4 要按新接口重做，先和 Larry 对齐。
+- **还能做、没人认领的**：
+  1. TRITON_ATTN 的 tree verify，按 #64844 的接口来。#61433 合入后 ROCm 开投机默认用它。R9700 上能开发，MI355 也要验证。
+  2. 在 ROCm 上验证 #64844 的 GDN/Mamba2 tree verify Triton kernel（`causal_conv1d.py`、`fused_sigmoid_gating.py`）。R9700 上有 Qwen3.6 int4 的环境。
+  3. AITER 后端的 tree verify，只能在 MI355 上做。
+- **已经有人在做**：ROCM_AITER_FA 配 EAGLE 草稿会崩的问题（#64680）有修复 PR #64888；EAGLE-4 本体的集成 #63028（HF-001）目前还是空壳。
 
 ---
 
@@ -659,6 +748,9 @@ MI355 侧已经查清的两点，见 [`mi355_spec_optim_progress.md`](https://gi
   - 和 #64045 的对比：脚本 `compare_cfgs.py`，结果在 `results/cmp_pr64045/`。
   - 单卡 int4 端到端：`run_e2e_w4a16.sh`（环境变量 `HWQ`、`TUNED_DIR`、`VLLM_TREE`、`DETAILED` 等见文件头）和 `chain_e2e_w4a16_*.sh`，结果在 `e2e_w4a16/`。
   - TP=4 BF16 端到端：`run_e2e_moe.sh` 和 `chain_e2e_n128*.sh`，结果在 `e2e/`。
+  - 第 7 条的同一时段对比：`chain_e2e_w4a16_hwq_alt.sh`，结果是 `e2e_w4a16/{defenv,hwq1}_*_hq2*`。
+  - 第 8 条的 MTP 显存实验：`run_e2e_w4a16_x.sh`（多了 `EXTRA_ARGS`、`MAX_NUM_SEQS`，并在摘要里记显存）和 `chain_mtp_mem.sh`，结果是 `e2e_w4a16/mm_*`。
+  - 这几个 chain 脚本在每次启动服务前都会检查这张卡的已用显存，超过 2 GiB 就停。
 - **文档**：
   - `pr_desc_rdna4_skinny_gemm.md`：#62799 的描述。
   - `w7900_test_guide.md` 和 `w7900_kit/`：W7900 复测。
