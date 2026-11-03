@@ -56,6 +56,8 @@ v2 包一行的大形状中，改过的 17 个算子（`sgemm_lora_b` 没有大�
 
 ## W7900D 上值得优化的算子：分批排序
 
+下面这五批是前两轮的结论，只覆盖最早的 56 个算子。上游后来又新增了 85 个，全部 141 个算子已在 2026-11-03 用另一套口径重新分批，见「第三轮」；那一轮不依赖 4090 的数据，并给每个有空间的算子定了病因，有几个算子的归属因此变了（如 `chunked_sgmv_shrink` 从「只有小形状」变成能快 2.5 倍）。
+
 按大形状（4090 上不少于 50 µs）上能快多少，把有大形状的 44 个算子分成五批，另列只有小形状的 12 个算子。「大形状耗时是 4090 的倍数」是各算子大形状的几何平均，按峰值带宽之比，访存型算子在 W7900D 上应是 4090 的 1.17 倍；「推算可快」对访存型算子按做到与 4090 相同的带宽利用率推算，即这个倍数 ÷ 1.17，也就是带宽归一化效率的倒数；`fused_moe_gemm` 按算力利用率推算。W7900D 上这个推算偏乐观：同样数据量的拷贝只到峰值带宽的 70%–84%；实测调参数的 7 个访存型算子中，只有问题明确的 `causal_conv1d_fn` 接近推算值（推算 8.57 倍，实测 4.69–9.19 倍），其余 6 个只快 1.0–1.4 倍（推算 1.6–3.1 倍），如 `gelu_and_mul` 推算 1.61 倍、实测 1.00–1.03 倍，`silu_and_mul` 推算 2.02 倍、实测 1.21–1.36 倍。没有发现具体问题的算子，调参数的收益大概也在这个范围。同一批内按能快的倍数排序。
 
 「用途」取自上游 `docs/tasks/` 的分类（与 R9700 文档相同），可以按要跑的模型取舍：不用 LoRA 就跳过 LoRA 类，不跑 Mamba 或线性注意力混合模型就跳过 Mamba、FLA 类。
@@ -199,6 +201,76 @@ v2 包一行的大形状中，改过的 17 个算子（`sgemm_lora_b` 没有大�
 - 海光后端有 32 个同样基于 HIP 的专门实现，可以作为参考，但它们是按 wave64 的 DCU 调的，RDNA 是 wave32，参数需要重新测。
 - 第一批里有的改法与 R9700 不同，合入时要按 gfx 版本区分：`context_attention` 在 R9700 上用 bf16x3，在 W7900D 上用 fp16 单次或改分块；router 的分块求和、`causal_conv1d_fn` 的规则两张卡相同；`w8a8_block_int8_matmul` 的 BLOCK_M ≤ 32 和 cudacore 的 4 个 warp 是针对 gfx1100 溢出的，R9700 上要复测。落地时的做法：#199 把 `ARCH_MAP` 改成按精确的 GPU 目标匹配，`_amd` 只把 gfx1100 映射到 rdna3 后端，其他 AMD 卡（gfx1101、gfx1151、gfx1201 等）仍走通用实现，所以这些 gfx1100 的规则不会用到 R9700 上；`context_attention` 合入的是 fp32 输入保持 fp32、fp16 和 bf16 输入用 WMMA 的写法。
 - 第二轮改算法和网格的几处（`context_attention` 的网格顺序和 K/V 先转换、`fused_moe_gemm` 的分组 GEMM、`extend_attention` 去掉 gather 和合并头、decode 的 split-KV）与硬件无关，R9700 和 4090 上应同样有效，但没有测；fp16 的写法和各算子的 num_warps 规则（LoRA 16 个、`bmm_chunk` 1 个、`chunk_state_varlen` 的分块等）是按 gfx1100 测出来的，换卡要复测。
+
+## 第三轮：141 个算子在同一口径下重新分批（2026-11-03）
+
+上面的分批只覆盖最早的 56 个算子，用的是「W7900D 耗时是 4090 的倍数」这个相对指标。上游后来又新增了 85 个算子，而且那个指标依赖另一张卡，换算成「能快多少」要靠假设。这一轮把全部 141 个算子（已移植 18 + 旧剩余 38 + 新增 85）放在同一把尺子下重测，并为每个有空间的算子找出具体病因。脚本和数据在 `opt_w7900d/survey/`，`results/batches.md` 是 140 行的完整排名表。
+
+### 口径
+
+主指标是**耗时 ÷ 同字节数拷贝的耗时**，两者都用 `do_bench` 刷缓存后取中位数，所以它直接回答「离这张卡在这个尺寸上真能跑到的搬运速度还有多远」，不需要另一张卡做参照，也不用再为 70%–84% 的拷贝上限打折扣。只统计 ≥ 30 µs 的形状，更小的被约 9 µs 的启动开销主导。**这个比值只对访存型算子成立**：注意力、GEMM、MoE router 这 12 个算子的成本是算力而不是搬运，表里单列为「算力型」。
+
+另外三个诊断指标，每个都能直接指向改法：
+
+- **主机侧占比**：连续调用 20 次的墙上时间，减去 profiler 报的 GPU 时间。封装里对 GPU 张量取值会让 GPU 空转，Python 封装太重也会。注意不能用 `do_bench` 的数字来减：它每次迭代都刷缓存，而 profiler 里的循环是背靠背跑的、数据还在缓存里，两者相减会把「缓存命中」算成「主机开销」（`ltx2_split_rotary` 刷缓存 399 µs、背靠背 82 µs，差了 4.9 倍）。
+- **编译产物**：把 Triton 缓存里 1796 个 kernel 实例的汇编全部解析，取寄存器数、溢出字节、LDS 和访存指令的宽度分布。不用上卡。访存宽度是其中最有用的一项：同样的数据量，用 16 字节指令搬运只需要 2 字节指令的八分之一条数。
+- **真实字节**：原来按整张量计数，而且预分配的输出缓冲既算成读、又算成写，所以 KV cache 这类算子会算出 2263% 的带宽。改成按调用前后实际改变的元素数统计写入，读取保留整张量作为上限。做这件事时要注意改写检测必须放在预热之前，否则缓冲区里已经是写过的值，会检测不到任何变化。
+
+rocprof 这条路走不通：这台机器上 GL2C（L2）计数器全部返回 0，`FETCH_SIZE`、`WRITE_SIZE` 也是 0，只有 SQ 系列可用，所以拿不到 HBM 流量。而且一次采集两个计数器会报「超出硬件采集能力」。
+
+### 正确性和可用性问题
+
+| 算子 | 现象 | 根因 |
+|---|---|---|
+| `residual_gate_add` | 单测 12 个用例失败 11 个 | 编译器把 `r + (u * g)` 映射成 `v_dot2_bf16_bf16`。这条指令内部按 fp32 算、只在最后舍入一次，跳过了参考实现要求的中间舍入（参考是 `(r.float() + (u.float() * g.float()).to(dtype).float()).to(dtype)`）。平时看不出来，bf16 下出现大幅抵消时整个结果就等于那 1 个 ulp（0.015625，绝对容差 0.015）。全仓只有这个算子和 `rmsnorm_scale` 编译出了这条指令，后者没有参考实现、无从验证 |
+| `chain_speculative_sampling` | 单测 9 个用例失败 2 个（B=512 和 B=4096、V=32000） | HIP 上 fp32 输入走的是 AMD 专属分支 `new__roc_plain`（`_uses_roc` 恒为真），NVIDIA 走 `base_plain`。接受链逐位一致（`accept_index`、`accept_token_num` 完全相同），只有最终采样的 token 差 ±1 个位置，1 / 2048 和 3 / 16384 行。三处差异都恰好落在判定边界的 0–1 个 float32 步之内，该处概率 7.7e-6 到 8.5e-5。是分块求和与参考的顺序扫描在并列点上的分歧，不是逻辑错；单测用 `torch.equal` 精确比较一个数值上等同掷硬币的采样决定 |
+| `rmsnorm_scale_shift` | hidden 不是 2 的幂时编译失败 | `_rmsnorm_scale_shift_kernel` 把 hidden 直接当 `tl.arange` 的长度，3072、5120、1536 这些常见维度全不能用。测的 6 个 3072 形状全部报 `arange's range must be a power of 2` |
+| `qk_head_layernorm` | q、k 头数不同时非法访存 | `n_rows = q.numel() // dh`，然后用网格的第二维选 q 还是 k，按 q 的行数去处理 k。GQA 形状（32 个 q 头、8 个 kv 头）越界 |
+| `silu_and_mul_masked` | 单测跑不完 | autotune 在这张卡上超过 30 分钟，1800 秒超时被杀。这个算子也是全仓溢出最多的（5952 B/lane，11 个候选版本溢出） |
+| `ep_scatter` | 一个形状输出带 NaN | 填充行没有初始化，看代码像是有意为之 |
+| 10 个 benchmark | 调不通自己的算子 | 7 个生成的参数个数不对，3 个多传了算子不接受的关键字参数（`block_size`、`page_size`、`scaling`）。详见新增算子文档 |
+
+后两类里 `rmsnorm_scale_shift`、`qk_head_layernorm` 和 10 个坏 benchmark 是通用实现和测试本身的问题、与硬件无关，适合给上游提；`residual_gate_add` 和 `chain_speculative_sampling` 是 AMD 路径独有的。
+
+### 新的分批
+
+140 个有数据的算子分成：超过 2 倍的 6 个、1.5–2 倍的 3 个、1.15–1.5 倍的 15 个、已接近拷贝速度（≤ 1.15）的 74 个、只有小形状的 30 个、算力型的 12 个。只有 `silu_and_mul_masked` 没有测到（autotune 超时）。
+
+**第一批 · 先修正确性**：上表的 4 个算子加 3 项可用性问题。
+
+**第二批 · 只改封装，不碰 kernel**：这几个算子的 kernel 本身没问题，时间花在主机侧。
+
+| 算子 | 连续调用 | 其中 GPU | 主机侧 | 病因 |
+|---|---:|---:|---:|---|
+| `create_chunked_prefix_cache_kv_indices` | 28.3 µs | 5.3 µs | 81% | Python 循环里逐个 `int(chunk_cu_seq_lens[i])`，每轮一次同步 |
+| `chunked_embedding_lora_a` | 230.8 µs | 56.2 µs | 76% | 另外唯一的版本溢出 1764 B、超过 scratch 门槛 |
+| `get_target_cache_loc` | 70.4 µs | 19.7 µs | 72% | `.tolist()` + `.numpy()` + `int(arr.sum())` |
+| `qkv_lora_b` | 151.3 µs | 98.0 µs | 35% | `int(seg_lens.max())`；一次 5 个 kernel；88% 的访存不超过 4 字节，带宽只有 32% |
+
+全仓用 AST 扫了一遍，真正会阻塞主机的只有这 4 处加 `context_attention`（rdna3 版本已去掉）和 `chunked_sgmv_expand`——后者虽然已经移植进 rdna3，但 rdna3 版本第 335 行仍保留着 `int((seg_indptr[1:] - seg_indptr[:-1]).max().item())`。
+
+**第三批 · 病因明确、收益大**：
+
+| 算子 | 耗时÷拷贝 | 病因与已验证的收益 |
+|---|---:|---|
+| `tiny_n_gemm` | 3.64 | n=1536 时 tile 数正好等于 96 个 CU，`tiles < _num_sms()` 判成假，于是走单遍 dot kernel，而那个 kernel 溢出 2156 B、超过 scratch 门槛。**强制走 split-K 实测 4.74–5.09 倍**（490 → 96–105 µs），n=512 的形状也快 1.10–1.12 倍。拆开看：把 `HSA_SCRATCH_SINGLE_LIMIT` 调到 4 GiB 只能到 341 µs（1.44 倍），剩下的 3.4 倍是单遍 kernel 本身不合适。把判断改成 `<=` 即可，但要同时调 split_k 的取值——按现有公式 tiles=96 只会得到 3，实验里用的是 28 |
+| `top_p_renorm` | 3.15 | 网格是 `(batch,)`，一行一个程序，batch=1 时 96 个 CU 只有 1 个在干活（V=131072 要 118 µs，同字节数的拷贝只要 11 µs）；而且按浮点位模式二分，每轮重读整行。解码期采样的 batch 通常就是 1–64，正好是最差的区间 |
+| `chunked_sgmv_shrink` | 2.50 | 带宽 29%，主机侧还占 42%。上一轮按 4090 的口径把它归在「只有小形状」里，换口径才看出来 |
+| `recompute_w_u` | 2.00 | `_packed_dot` 有 64 条 2 字节访存对 12 条 16 字节，带宽 26% |
+
+`chain_speculative_sampling`（4.34）和 `get_target_cache_loc`、`qkv_lora_b`、`chunked_embedding_lora_a` 虽然比值也在这一档或更高，但前者的主要工作是修正确性加合并 18 个 kernel，后三个归在第二批。
+
+**第四批 · 1.15–1.5 倍（15 个）**：`add3`、`fused_softmax_pool`、`embedding_lora_a`、`fused_qk_gemma_rmsnorm_rope_gate`、`ltx2_split_rotary`、`per_group_transpose`、`dsv3_fused_a_gemm`、`residual_gate_add`、`state_passing`、`hc_head`、`moe_sum_reduce`、`dcp_lse_combine`、`moe_fused_mul_sum`、`apply_token_bitmask`、`sgemm_lora_b`。大多没有发现溢出或窄访存这类具体问题，差距应来自分块和 warp 数，按前两轮的实测单项大概 1.0–1.4 倍。
+
+**不建议投入**：74 个已接近拷贝速度的，30 个只有小形状的。后者要靠合并 kernel、去掉主机同步和 HIP graph，不是单个 kernel 的事。
+
+### 溢出的全貌
+
+1796 个编译实例里只有 12 个算子溢出，按每条 lane 的字节数排：`silu_and_mul_masked` 5952、`context_attention` 2792、`group_norm_silu` 2256、`tiny_n_gemm` 2156、`chunked_embedding_lora_a` 1764、`selective_state_update` 1164、`post_reorder_deepgemm` 592、`sgemm_lora_a` 300、`vocab_parallel_embedding` 和 `extend_attention` 各 132、`dsv3_fused_a_gemm` 68、`state_passing` 28。门槛折合每条 lane 1493 字节，超过的有前 5 个；其中 `silu_and_mul_masked`、`group_norm_silu`、`post_reorder_deepgemm` 带 autotune，溢出的是候选而不一定是选中的版本，`context_attention` 已在 #199 中解决，所以真正受影响的是 `tiny_n_gemm` 和 `chunked_embedding_lora_a`，都已列入上面的批次。
+
+### 已移植的 18 个复查
+
+访存型的都已落在拷贝速度附近：`log_scaling_tau` 0.88、`causal_conv1d_fn` 0.91、`fused_rmsnorm` 0.94、`gate_up_lora_b` 1.11、`chunked_sgmv_expand` 1.13、`sgemm_lora_b` 1.16、`per_group_transpose` 1.31。算力型的另算：`context_attention` 最大形状（64 条序列 × 2048 个 token × 32 头 × 128）688 ms，按因果掩码折半约 64 TFLOPS，是 bf16 WMMA 峰值的一半左右，对注意力来说正常。剩下 `per_group_transpose` 1.31 和 `sgemm_lora_b` 1.16 还有一点空间，已列进第四批。
 
 ## 怎么判断
 
