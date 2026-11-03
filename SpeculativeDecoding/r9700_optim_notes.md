@@ -30,7 +30,7 @@ R9700 上投机解码和推理性能的工作记录：做了什么、结论和�
 | 5 | R9700 的 fused_moe 调优配置（Qwen3.6-35B-A3B） | 配置文件 | 单卡 int4：kernel 1.18–1.63 倍，端到端 conc 4–32 +8–12%。TP=4 BF16：kernel 1.01–1.16 倍 | int4 和 [#64045](https://github.com/vllm-project/vllm/pull/64045) 重复，11-03 已评论支持并建议补 `"512"`；BF16 TP=4 不提交 |
 | 6 | ROCm 后端支持 fused multi-step draft decode | 评估 | R9700 上没有收益，和 MI355X 的结论一致 | 不做 |
 | 7 | 快/慢两种状态和 `GPU_MAX_HW_QUEUES` | 根因排查 + 部署建议 | 默认环境下性能随机落在快态或慢态；`GPU_MAX_HW_QUEUES=1` 稳定在快态。单卡 Qwen3.6 int4 同一时段对比：不开投机 conc 1/4 快 25%/31%，MTP conc 1 快 14%，其余 +3–5% | 单卡部署建议设；未报 issue。TP=4 加它时机器死机过一次 |
-| 8 | 单卡 MTP 的显存开销（Qwen3.6 GDN 混合模型） | 根因排查 | 开 MTP 后 KV 容量 −63%：GDN 投机状态每个请求多 9 块，草稿层 BF16 权重 1.6 GiB，CUDA graph 多 1.7 GiB；conc 32 比不开投机慢 11% | 进行中：在测不改代码的参数 |
+| 8 | 单卡 MTP 的显存开销（Qwen3.6 GDN 混合模型） | 根因排查 + 部署建议 | 开 MTP 后 KV 容量 −63%：GDN 投机状态每个请求多 9 块，草稿层 BF16 权重 1.6 GiB，CUDA graph 多 1.7 GiB；conc 32 比不开投机慢 11%。加 `--max-num-seqs 32 --gpu-memory-utilization 0.95` 后 conc 32 从 407 提到 473 tok/s，反超不开投机 3% | 参数层面已验证；代码层面的改法待评估 |
 | 9 | EAGLE-4 在 ROCm 上的支持（Larry 的 PR 之外） | 候选 | #64844 合入后 ROCm 的 attention 后端只支持 chain，tree verify 会降级 | 未开始；先和 Larry 对齐分工 |
 
 ## 后续能做的
@@ -39,7 +39,7 @@ R9700 上投机解码和推理性能的工作记录：做了什么、结论和�
 
 1. #62799 rebase 解决冲突，跟进 review（第 1 条）。
 2. 跟进 #64045 对 `"512"` 条目的回复（第 5 条）。
-3. 第 8 条：测完不改代码的参数后，评估 GDN 投机状态的代码改法（投机解码版的 GDN ReplaySSM，或只在 verify 那一步持有草稿状态）。
+3. 第 8 条：单卡 MTP 部署用 `--max-num-seqs 32 --gpu-memory-utilization 0.95`（已验证）。再评估 GDN 投机状态的代码改法（投机解码版的 GDN ReplaySSM，或只在 verify 那一步持有草稿状态），32 并发的 TTFT 还有 2.7 s。
 4. 决定是否报 hipBLASLt 的 issue（第 2 条）、是否发 #61433 的评审评论（第 3 条）、是否给 ROCm 报快/慢状态的 issue（第 7 条）。
 5. skinny GEMM 扩到 129–256 行（按形状查表；原型在 DSpark conc 32 每步 −16%），384–512 行另想方案，并验证 gfx1200 和 RDNA3（第 1 条"后续"）。
 6. 调 MTP 草稿层用的 BF16 MoE 配置 `E=256,N=512,device_name=AMD_Radeon_R9700.json`（第 5 条）。
@@ -48,6 +48,8 @@ R9700 上投机解码和推理性能的工作记录：做了什么、结论和�
 
 ## 更新记录
 
+> **2026-11-03（三）**：第 8 条补了不改代码的参数实验：单卡 MTP 推荐 `--max-num-seqs 32 --gpu-memory-utilization 0.95`，32 并发从 407 提到 473 tok/s。
+>
 > **2026-11-03（二）**：第 7 条补了单卡 Qwen3.6 int4 的同一时段对比，`GPU_MAX_HW_QUEUES=1` 的收益得到确认；新增第 8 条（单卡 MTP 的显存开销，进行中）和第 9 条（EAGLE-4 在 ROCm 上的支持，候选）。
 >
 > **2026-11-03**：文档由 `pr_candidates.md` 改名，加了"当前状态"和"后续能做的"。第 1 条已提交为 #62799；第 5 条完成（int4 配置和 #64045 重复，已评论）；新增第 6 条（fused multi-step draft decode）和第 7 条（快/慢状态）。
@@ -608,7 +610,7 @@ K=7 吞吐（tok/s，第一轮 / 第二轮）：
 
 ---
 
-## 8. 单卡 MTP 的显存开销（Qwen3.6 GDN 混合模型，进行中）
+## 8. 单卡 MTP 的显存开销（Qwen3.6 GDN 混合模型）
 
 ### 现象
 
@@ -637,15 +639,30 @@ K=7 吞吐（tok/s，第一轮 / 第二轮）：
   - 按这个模型算出的容量比是 0.58 × 0.64 = 0.37，和实测的 0.37 一致。
 - vLLM 里已有的 ReplaySSM（`--use-replayssm`）能让 `num_speculative_blocks` 变成 0，但限制很多：模型要声明 `supports_replayssm`（目前是 Mamba2 和 KDA 模型），投机解码时还要用 FlashInfer 的 Mamba 后端、关掉 prefix caching。Qwen3.5/3.6 的 GDN 不支持。上游给 GDN 做的 ReplaySSM 只覆盖普通 decode（#62004、#64699），投机解码版（#49887）已关闭。
 
-### 正在做
+### 不改代码的参数（11-03）
 
-在 HIP 0/1 上测不改代码的参数（`moe_tune/chain_mtp_mem.sh`，`GPU_MAX_HW_QUEUES=1`）：
+单卡 Qwen3.6 int4，调过的 MoE 配置，`GPU_MAX_HW_QUEUES=1`，ShareGPT。每个变体先空启动一次预热编译缓存，再正式跑一轮。除了注明的那一行，都是 MTP、3 个草稿 token。显存是 GiB，吞吐是输出 tok/s：
 
-- 关掉 prefix caching，GDN 每组从 5 块降到 4 块；
-- 用 2 个草稿 token；
-- `--max-num-seqs 32`，少录一些 CUDA graph；
-- `--gpu-memory-utilization 0.95`；
-- 以及这几项的组合。
+| 变体 | KV 可用显存 | CUDA graph | 最大并发 | conc 1 | conc 4 | conc 16 | conc 32 | conc 32 的 TTFT |
+|---|---|---|---|---|---|---|---|---|
+| 默认参数 | 4.81 | 2.02 | 6.90 | 99.4 | 213.4 | 383.7 | 407.0 | 5.9 s |
+| `--max-num-seqs 32` | 6.37 | 0.55 | 9.13 | 98.9 | 216.8 | 389.3 | 453.7 | 3.5 s |
+| `--gpu-memory-utilization 0.95` | 5.77 | 2.02 | 8.26 | 99.7 | 216.8 | 391.3 | 441.7 | 4.5 s |
+| 关 prefix caching | 5.29 | 2.02 | 8.39 | 99.4 | 215.4 | 385.0 | 426.6 | 4.7 s |
+| 2 个草稿 token | 5.52 | 1.33 | 8.75 | 95.8 | 202.7 | 366.0 | 440.9 | 2.8 s |
+| seqs 32 + 关 prefix caching | 6.37 | 0.55 | 10.11 | 98.6 | 215.3 | 385.8 | 457.1 | 3.7 s |
+| **seqs 32 + 0.95** | 7.32 | 0.55 | 10.48 | 99.6 | 216.8 | 385.0 | **473.4** | 2.8 s |
+| 三项全开 | 7.33 | 0.55 | 11.61 | 98.8 | 215.0 | 384.4 | 470.3 | 2.7 s |
+| 对照：不开投机 | 8.33 | 0.28 | 18.77 | 72.7 | 184.7 | 331.0 | 457.9 | 0.23 s |
+
+- 默认参数、关 prefix caching、2 个草稿 token 在 HIP 1 上跑，其余在 HIP 0；不开投机那一行是第 7 条里 HIP 0 上 hwq1 的均值。
+- **单卡 MTP 推荐 `--max-num-seqs 32 --gpu-memory-utilization 0.95`**：32 并发从 407 提到 473 tok/s（+16%），比不开投机还高 3%；1–16 并发不受影响。
+  - `--max-num-seqs 32` 让 CUDA graph 显存从 2.02 GiB 降到 0.55 GiB，代价是同时运行的请求最多 32 个。
+  - 显存比例设 0.95 时，冷编译可能在启动的显存探测阶段 OOM（三项全开那组，第一次就这样失败了）。先用默认的 0.92 启动一次，把编译缓存热起来，再用 0.95。
+- 在已经用了前两项的情况下，关 prefix caching 没有额外收益，所以保留 prefix caching。
+- 2 个草稿 token 时接受长度从 2.9 降到 2.4，1–16 并发慢 4–5%，不划算。
+- 32 并发的 TTFT 仍有 2.7 s（不开投机 0.23 s），还在排队。要根治得减少 GDN 的投机状态，见下面的"后续"。
+- 数据在 `moe_tune/e2e_w4a16/mm_*`，脚本是 `moe_tune/chain_mtp_mem{,2,3}.sh`。
 
 ### 后续
 
@@ -749,8 +766,8 @@ MI355 侧已经查清的两点，见 [`mi355_spec_optim_progress.md`](https://gi
   - 单卡 int4 端到端：`run_e2e_w4a16.sh`（环境变量 `HWQ`、`TUNED_DIR`、`VLLM_TREE`、`DETAILED` 等见文件头）和 `chain_e2e_w4a16_*.sh`，结果在 `e2e_w4a16/`。
   - TP=4 BF16 端到端：`run_e2e_moe.sh` 和 `chain_e2e_n128*.sh`，结果在 `e2e/`。
   - 第 7 条的同一时段对比：`chain_e2e_w4a16_hwq_alt.sh`，结果是 `e2e_w4a16/{defenv,hwq1}_*_hq2*`。
-  - 第 8 条的 MTP 显存实验：`run_e2e_w4a16_x.sh`（多了 `EXTRA_ARGS`、`MAX_NUM_SEQS`，并在摘要里记显存）和 `chain_mtp_mem.sh`，结果是 `e2e_w4a16/mm_*`。
-  - 这几个 chain 脚本在每次启动服务前都会检查这张卡的已用显存，超过 2 GiB 就停。
+  - 第 8 条的 MTP 显存实验：`run_e2e_w4a16_x.sh`（多了 `EXTRA_ARGS`、`MAX_NUM_SEQS`，并在摘要里记显存）；`chain_mtp_mem.sh` 跑单项变体，`chain_mtp_mem3.sh` 跑组合（预热时固定用 0.92）。结果是 `e2e_w4a16/mm_*`。
+  - 这几个 chain 脚本在每次启动服务前都会检查这张卡的已用显存，超过 2 GiB 就停。上一个服务的 EngineCore 进程会晚几秒释放显存，所以 `chain_mtp_mem2.sh`、`chain_mtp_mem3.sh` 会先等最多 2 分钟再判断；以后新写的 chain 用这个版本的检查。
 - **文档**：
   - `pr_desc_rdna4_skinny_gemm.md`：#62799 的描述。
   - `w7900_test_guide.md` 和 `w7900_kit/`：W7900 复测。
