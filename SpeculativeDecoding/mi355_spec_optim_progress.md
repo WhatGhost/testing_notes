@@ -61,6 +61,29 @@
 
 ## 4. 环境
 
+### 4.1 新机器（2026-11-03 起，当前工作机）
+
+容器 `rocm724_gyy_spectest`（镜像 `rocm/pytorch:rocm7.2.4_ubuntu24.04_py3.12_pytorch_release_2.10.0`），宿主 `/home/yuygao/spectest` 挂到 `/target/spectest`。
+
+| 组件 | 新机器 | 旧机器 |
+|---|---|---|
+| ROCm | 7.2.4 | 7.2.3 |
+| torch | 2.14.0+rocm7.2（download.pytorch.org/whl/rocm7.2，对齐 vLLM main 的 `torch == 2.14.0`） | 2.12.0+git6bbd260 |
+| Triton | 3.8.0+amd.rocm7.2.0.git7cb7b059 | 同 |
+| AITER（venv） | 0.1.27 wheel（vLLM `Dockerfile.rocm_base` 推荐版本） | 0.1.25 |
+| vLLM | main `ddbe9beb75`（11-03），editable，**不含 #63015** | main，含 #63015 |
+
+- 目录：源码 `/target/spectest/{vllm,aiter,speculative-bench,testing_notes}`（`origin` + `fork`），模型 `/target/models`，缓存 `/target/spectest/cache/{hf,vllm,triton}`，环境变量 `/target/spectest/env.sh`，交接材料 `/target/spectest/handoff/`。
+- 依赖锁定：`/target/spectest/core-constraints.txt`（torch/vision/audio/triton）。交接包里的旧 `core-constraints.txt` 锁的是 Triton 3.7.1，不要用。
+- 安装注意：
+  - torch 2.14+rocm7.2 依赖 `triton-rocm`，与 AMD Triton 共用 `triton/` 目录。pip 装包后运行 `scripts/fix_triton.sh` 恢复 3.8.0。
+  - AITER 编译要设 `AITER_USE_SYSTEM_TRITON=1`（否则重装 Triton），且需装 `setuptools_scm`（否则版本号为 0.0.0）。
+  - vLLM 识别 ROCm 需要 `amdsmi`（不在 vLLM 依赖里），从 `/opt/rocm/share/amd_smi` 安装。
+- 选卡：HIP → rocm-smi 编号为 0→3、1→0、2→2、3→1、4→7、5→4、6→6、7→5。**卡与其他容器共用**，测性能前看 rocm-smi 的 VRAM% 和 SCLK。
+- 冒烟：Qwen3-14B + DSpark n=7（target AITER UA）正常，接受长度约 5.05。
+
+### 4.2 旧机器（已停用）
+
 - `/opt/venv`：vLLM main（editable，`/target/spec_test/vllm`，含 #63015 修复）+ Triton 3.8.0 + AITER 0.1.25（site-packages）。注意：脚本把 `/target/spec_test/aiter` 加进 `sys.path` 会换成仓库版 AITER。
 - `/opt/venv-vllm0.28`：旧 0.28.0，正式基准数据出自这里。
 - 缓存：`HF_HOME=/target/.cache/huggingface`，`VLLM_CACHE_ROOT=/target/.cache/vllm`（`~/.bashrc` 开头）。
