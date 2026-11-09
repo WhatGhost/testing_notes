@@ -178,7 +178,7 @@
 
 ### 状态
 
-这 36 个算子同样只在 W7900D 上做过摸底，RTX 4090 和 R9700 都没测（见文末，逐算子数据在 `W7900D_AMD_optimization.md` 的「第三轮」）。W7900D 上：单测全部通过，耗时上 8 个只有小形状、8 个已接近拷贝带宽、12 个按整张量算字节数会高估，4 个有优化空间（`add3`、`fused_softmax_pool`、`ltx2_split_rotary`、`dcp_lse_combine`），另外 4 个明显偏慢（`get_target_cache_loc`、`tiny_n_gemm`、`top_p_renorm`、`recompute_w_u`），是这 85 个里最值得优化的。另外：
+这 36 个算子同样只在 W7900D 上做过摸底，RTX 4090 和 R9700 都没测（见文末，逐算子数据在 `W7900D_AMD_optimization.md` 的「第三轮」）。W7900D 上：单测全部通过，耗时上 8 个只有小形状、8 个已接近拷贝带宽、12 个按整张量算字节数会高估，4 个有优化空间（`add3`、`fused_softmax_pool`、`ltx2_split_rotary`、`dcp_lse_combine`），另外 4 个明显偏慢（`get_target_cache_loc`、`tiny_n_gemm`、`top_p_renorm`、`recompute_w_u`），是这 85 个里最值得优化的。其中 `tiny_n_gemm`、`top_p_renorm`（及通用 `tiny_n_gemm` 的 K 尾部掩码）已合入 [#298](https://github.com/flagos-ai/FlagGems-sglang/pull/298)（2026-11-09），见 `W7900D_AMD_optimization.md` 的「`tiny_n_gemm` / `top_p_renorm`（2026-11-09）」；还剩 `get_target_cache_loc`、`recompute_w_u`。另外：
 
 - 每个算子都有单测和 benchmark。benchmark 只测一种 dtype：`conv_window_scatter_with_mask`、`linear_decode_forward`、`state_scatter_with_mask`、`top_p_renorm`、`wide_row_softmax` 只测 float32，其余 31 个只测 bfloat16。
 - 用与上一段相同的静态检查没有发现新的参数个数不匹配。`hash_topk`、`topk_sigmoid`、`zero_experts_identity` 的 benchmark 把后几个参数放在末尾的 dict 里，框架按关键字参数传入，个数对得上；`create_chunked_prefix_cache_kv_indices` 的签名是 `(*args, **kwargs)`，静态检查不适用。
@@ -300,6 +300,6 @@
 
 ## W7900D 摸底
 
-这 85 个算子在 W7900D（gfx1100）上测过一轮：68 个有 benchmark 的用 benchmark 自己的输入，其中 10 个调不通的改用单测里的用例，最新 17 个没有 benchmark、按通用实现的签名和代码里写死的形状分支自己构造输入。单测除 `residual_gate_add` 外都通过。结论是大多数已跑在这张卡的可达带宽附近，值得优化的是 `tiny_n_gemm`（n=1536 时 tile 数 96 不小于 `_num_sms()`，没走 split-K 分支，走了溢出 2156 B 的单遍 kernel，强制走 split-K 实测快 4.74–5.09 倍；`_num_sms()` 在 gfx1100 上是 WGP 数 48，不是 96 个 CU，只把 `<` 改成 `<=` 不会生效，见 `W7900D_AMD_optimization.md` 的「`tiny_n_gemm` 复核」）、`get_target_cache_loc`（封装里三处主机取值，连续调用 70.4 µs 里只有 19.7 µs 在 GPU 上）、`top_p_renorm`（网格是 `(batch,)`，batch = 1 时 96 个 CU 只有 1 个在干活）和 `recompute_w_u`（`_packed_dot` 有 64 条 2 字节访存对 12 条 16 字节）。
+这 85 个算子在 W7900D（gfx1100）上测过一轮：68 个有 benchmark 的用 benchmark 自己的输入，其中 10 个调不通的改用单测里的用例，最新 17 个没有 benchmark、按通用实现的签名和代码里写死的形状分支自己构造输入。单测除 `residual_gate_add` 外都通过。结论是大多数已跑在这张卡的可达带宽附近，当时最值得优化的是 `tiny_n_gemm`、`get_target_cache_loc`、`top_p_renorm`、`recompute_w_u`。其中 `tiny_n_gemm`、`top_p_renorm` 已合入 [#298](https://github.com/flagos-ai/FlagGems-sglang/pull/298)：rdna3 `tiny_n_gemm` 对 M>1 一律 split-K，官方 benchmark n=1536 快 5.42–5.61 倍、n=512 快 1.44–1.56 倍；rdna3 `top_p_renorm` 用探测点 + Anderson–Björck 减少搜索遍数，官方 benchmark 快 1.35–2.32 倍；同 PR 还修了通用 split-K 对 K 尾部的掩码。还剩 `get_target_cache_loc`（封装里三处主机取值，连续调用 70.4 µs 里只有 19.7 µs 在 GPU 上）和 `recompute_w_u`（`_packed_dot` 有 64 条 2 字节访存对 12 条 16 字节）。详情见 `W7900D_AMD_optimization.md` 的「`tiny_n_gemm` 复核」「`tiny_n_gemm` / `top_p_renorm`（2026-11-09）」。
 
 这些算子后来和早先的 56 个放在同一口径下重新测过、重新分了批，口径（含为什么按整张量算字节数会把 KV cache 这类算子算出 2263% 的带宽）、逐算子数据和新的分批都在 `W7900D_AMD_optimization.md` 的「第三轮」，完整排名表在 `opt_w7900d/survey/results/batches.md`。
