@@ -1,0 +1,13 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: chunked_sgmv_expand  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.051040                 N/A          ([torch.Size([512, 64]), torch.Size([4, 8192, 32])], {'batch_info': None, 'slice_offsets': torch.Size([3]), 'max_slice_size': 4096, 'base_output': torch.Size([512, 8192])})
+SUCCESS                    N/A            0.086320                 N/A          ([torch.Size([1024, 192]), torch.Size([2, 6144, 64])], {'batch_info': None, 'slice_offsets': torch.Size([4]), 'max_slice_size': 4096, 'base_output': torch.Size([1024, 6144])})
+SUCCESS                    N/A            0.010720                 N/A          ([torch.Size([8, 16]), torch.Size([1, 64, 16])], {'batch_info': None, 'slice_offsets': torch.Size([2]), 'max_slice_size': 64, 'base_output': torch.Size([8, 64])})
+SUCCESS                    N/A            0.010720                 N/A          ([torch.Size([64, 32]), torch.Size([2, 192, 16])], {'batch_info': None, 'slice_offsets': torch.Size([3]), 'max_slice_size': 128, 'base_output': torch.Size([64, 192])})
+SUCCESS                    N/A            0.010800                 N/A          ([torch.Size([32, 96]), torch.Size([2, 512, 32])], {'batch_info': None, 'slice_offsets': torch.Size([4]), 'max_slice_size': 256, 'base_output': torch.Size([32, 512])})
+
+.
+1 passed in 1.43s

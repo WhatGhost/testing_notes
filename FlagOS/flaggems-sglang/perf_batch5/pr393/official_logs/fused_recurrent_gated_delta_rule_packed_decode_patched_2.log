@@ -1,0 +1,13 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: fused_recurrent_gated_delta_rule_packed_decode  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.016560                 N/A          ([torch.Size([1, 8192]), torch.Size([1, 32]), torch.Size([1, 32]), torch.Size([32]), torch.Size([32]), 0.08838834764831845, torch.Size([2, 32, 128, 128]), torch.Size([1, 1, 32, 128]), torch.Size([1])], {'use_qk_l2norm_in_kernel': False})
+SUCCESS                    N/A            0.056522                 N/A          ([torch.Size([8, 8192]), torch.Size([8, 32]), torch.Size([8, 32]), torch.Size([32]), torch.Size([32]), 0.08838834764831845, torch.Size([9, 32, 128, 128]), torch.Size([8, 1, 32, 128]), torch.Size([8])], {'use_qk_l2norm_in_kernel': False})
+SUCCESS                    N/A            0.363490                 N/A          ([torch.Size([64, 8192]), torch.Size([64, 32]), torch.Size([64, 32]), torch.Size([32]), torch.Size([32]), 0.08838834764831845, torch.Size([65, 32, 128, 128]), torch.Size([64, 1, 32, 128]), torch.Size([64])], {'use_qk_l2norm_in_kernel': False})
+SUCCESS                    N/A            1.409280                 N/A          ([torch.Size([256, 8192]), torch.Size([256, 32]), torch.Size([256, 32]), torch.Size([32]), torch.Size([32]), 0.08838834764831845, torch.Size([257, 32, 128, 128]), torch.Size([256, 1, 32, 128]), torch.Size([256])], {'use_qk_l2norm_in_kernel': False})
+SUCCESS                    N/A            2.788440                 N/A          ([torch.Size([512, 8192]), torch.Size([512, 32]), torch.Size([512, 32]), torch.Size([32]), torch.Size([32]), 0.08838834764831845, torch.Size([513, 32, 128, 128]), torch.Size([512, 1, 32, 128]), torch.Size([512])], {'use_qk_l2norm_in_kernel': False})
+
+.
+1 passed in 2.75s

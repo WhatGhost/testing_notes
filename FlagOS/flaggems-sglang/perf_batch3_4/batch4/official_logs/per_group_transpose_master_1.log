@@ -1,0 +1,17 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: per_group_transpose  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.009280                 N/A          [torch.Size([128, 128]), torch.Size([9])]
+SUCCESS                    N/A            0.010640                 N/A          [torch.Size([1024, 128]), torch.Size([9])]
+SUCCESS                    N/A            0.026920                 N/A          [torch.Size([8192, 128]), torch.Size([9])]
+SUCCESS                    N/A            0.009400                 N/A          [torch.Size([128, 512]), torch.Size([9])]
+SUCCESS                    N/A            0.012520                 N/A          [torch.Size([1024, 512]), torch.Size([9])]
+SUCCESS                    N/A            0.057400                 N/A          [torch.Size([8192, 512]), torch.Size([9])]
+SUCCESS                    N/A            0.012560                 N/A          [torch.Size([128, 4096]), torch.Size([9])]
+SUCCESS                    N/A            0.046120                 N/A          [torch.Size([1024, 4096]), torch.Size([9])]
+SUCCESS                    N/A            0.507481                 N/A          [torch.Size([8192, 4096]), torch.Size([9])]
+
+.
+1 passed in 2.49s

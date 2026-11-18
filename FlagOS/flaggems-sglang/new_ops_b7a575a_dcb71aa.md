@@ -1,8 +1,8 @@
-# FlagGems-sglang 新增算子（b7a575a → dcb71aa）
+# FlagGems-sglang 新增算子（b7a575a → 5c2ed0f）
 
-本目录 RTX 4090、W7900D、R9700 的测试都基于 flagos-ai/FlagGems-sglang 的 b7a575a，当时仓库注册了 56 个算子。到 9580d88 新增了 32 个（2026-10-21 记录），到 2aaa9b0 又新增 36 个（2026-10-29 记录），到 7e9943f 再新增 17 个（2026-11-02 记录），到 dcb71aa 又新增 6 个（2026-11-05 记录），共 147 个，其间没有删除或改名的算子。四段分开记录，这份清单记录的是还没有在各张卡上测完的算子，某个算子在所有卡上都测过之后就可以从这里去掉。
+本目录 RTX 4090、W7900D、R9700 的测试都基于 flagos-ai/FlagGems-sglang 的 b7a575a，当时仓库注册了 56 个算子。到 9580d88 新增了 32 个（2026-10-21 记录），到 2aaa9b0 又新增 36 个（2026-10-29 记录），到 7e9943f 再新增 17 个（2026-11-02 记录），到 dcb71aa 又新增 6 个（2026-11-05 记录），到 1bb7755 再新增 16 个实现（2026-11-10 记录），到 5c2ed0f 再新增 18 个实现（2026-11-13 记录，含此前只有 reference/单测的 `silu_and_mul_routed`），`ops/` 共 181 个，其间没有删除或改名的算子。各段分开记录，这份清单记录的是还没有在各张卡上测完的算子，某个算子在所有卡上都测过之后就可以从这里去掉。
 
-## 测试覆盖（2026-11-05）
+## 测试覆盖（2026-11-13）
 
 | | RTX 4090 | W7900D | R9700 |
 |---|---|---|---|
@@ -11,11 +11,13 @@
 | 第二段新增 36 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第三段新增 17 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第四段新增 6 个 | 未测 | 只跑了单测，未计时 | 未测 |
+| 第五段新增 16 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
+| 第六段新增 18 个 | 未测 | 未测 | 未测 |
 
-- 三张卡的报告（`RTX4090_report.md`、`W7900D_report.md`、`R9700_report.md`）都停在 b7a575a 的 56 个算子，这 91 个新增算子**在 RTX 4090 和 R9700 上一个都没有测过**，所以目前没有可以从这份清单里去掉的算子。
-- W7900D 上前三段的 85 个全部测了耗时，也都跑了单测。第三段的 17 个原来没有参考实现和单测，后来由 batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上，单测全部通过。只有第一段的 `residual_gate_add` 不通过，gfx1100 上的修复在 [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290)（在审）。第四段的 6 个单测全部通过，还没有计时。
+- 三张卡的报告（`RTX4090_report.md`、`W7900D_report.md`、`R9700_report.md`）都停在 b7a575a 的 56 个算子，这些新增算子**在 RTX 4090 和 R9700 上一个都没有测过**，所以目前没有可以从这份清单里去掉的算子。
+- W7900D 上前三段的 85 个全部测了耗时，也都跑了单测。第三段的 17 个原来没有参考实现和单测，后来由 batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上，单测全部通过。第一段的 `residual_gate_add` 与 `silu_and_mul_masked` 等正确性修复已合入 [#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) / [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290)。第四段的 6 个单测全部通过，还没有计时。第五段 16 个单测 161 passed，并已按第三轮口径计时摸底。第六段 18 个（batch11，多为量化类）还没有在任何一张卡上跑过。
 - W7900D 上做的是摸底，不是三份报告那种正式测试：用的是 benchmark 自己的形状和 `do_bench`，没有跑官方 benchmark 的全量形状，也没有做多轮稳定性复测。要把某一段标成「已测」并从清单里去掉，应当按三份报告的口径重跑。
-- 逐算子数据和在 W7900D 上的优化分批见 `W7900D_AMD_optimization.md` 的「第三轮」；摸底的做法和结论见文末。
+- 逐算子数据和在 W7900D 上的优化分批见 `W7900D_AMD_optimization.md` 的「第三轮」「batch10 摸底」「SGLang 接入正确性」。
 
 ## b7a575a → 9580d88：新增 32 个
 
@@ -288,18 +290,102 @@
 
 ### 状态
 
-这 6 个算子只在 W7900D 上跑了单测（每个 4 个用例，全部通过），还没有计时；RTX 4090 和 R9700 都没测。
+这 6 个算子只在 W7900D 上跑了单测（每个 4 个用例，全部通过），还没有按第三轮口径计时；RTX 4090 和 R9700 都没测。其中 `chunk_gated_delta_rule_fwd` 在接 SGLang 时另有正确性/接口问题，见 `W7900D_AMD_optimization.md` 的「SGLang 接入正确性（2026-11-10）」。
 
 已记录的 141 个算子在这期间的变化：
 
 - `decode_attention`、`decode_grouped_attention`、`extend_attention`、`log_scaling_tau` 的 gfx1100 版本合入（[#271](https://github.com/flagos-ai/FlagGems-sglang/pull/271)），W7900D 上共 18 个算子走 `_amd/rdna3/ops/`。
 - batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上第三段 17 个算子的参考实现、单测和 benchmark；[#272](https://github.com/flagos-ai/FlagGems-sglang/pull/272) 修好第一段那 10 个调不通的 benchmark。
 - `fused_qk_gemma_rmsnorm_rope_gate` 的通用实现把 `next_power_of_2` 移到 kernel 外（[#285](https://github.com/flagos-ai/FlagGems-sglang/pull/285)）；MThreads、T-Head 新增了 `one_pass_rms_norm` 的厂商版本，参数名在 [#287](https://github.com/flagos-ai/FlagGems-sglang/pull/287) 对齐。
-- 其余算子的通用实现、参考实现、单测和厂商版本都没有改。
-- 在审：[#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) 修复 `rmsnorm_scale_shift`、`qk_head_layernorm`、`silu_and_mul_masked` 的通用实现，[#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290) 新增 `residual_gate_add`、`silu_and_mul_masked` 的 gfx1100 版本，见 `W7900D_AMD_optimization.md` 的「正确性修复（2026-11-04）」。
+- 正确性 [#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) / [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290) 与 `tiny_n_gemm`/`top_p_renorm` [#298](https://github.com/flagos-ai/FlagGems-sglang/pull/298) 已合入；第二批 `chunked_embedding_lora_a` / `qkv_lora_b` / `get_target_cache_loc` 已合入 [#331](https://github.com/flagos-ai/FlagGems-sglang/pull/331)（2026-11-10）。
+
+## dcb71aa → 1bb7755：新增 16 个
+
+### 提交范围
+
+| | 提交 | 日期 | 提交说明 |
+|---|---|---|---|
+| 起点 | [dcb71aa](https://github.com/flagos-ai/FlagGems-sglang/commit/dcb71aab0263cc48b40c02bd824c89820bb45be6) | 2026-11-03 | Merge pull request #287 from liuhycs/fix/one-pass-rms-norm-w-kwarg |
+| 终点 | [1bb7755](https://github.com/flagos-ai/FlagGems-sglang/commit/1bb775548f346e2af0199cdc61dbd405a3e5c738) | 2026-11-09 | Merge pull request #327 from liuhycs/fix/lora-step-av-bv-flagtree-eviction-crash（记录时的 master） |
+
+两者之间的全部改动见 [dcb71aa...1bb7755](https://github.com/flagos-ai/FlagGems-sglang/compare/dcb71aa...1bb7755)。
+
+### 来源
+
+- 16 个算子实现主要来自 FlagOS 竞赛 Track1 的参赛 PR（2026-11-06 一批合入：#253–#268、#273、#277 等）。
+- 参考实现、单测和 benchmark 由 [#303](https://github.com/flagos-ai/FlagGems-sglang/pull/303)（batch10，2026-11-09 合入）按仓库惯例补齐；同 PR 还列了 `silu_and_mul_routed`，但 **没有** `ops/silu_and_mul_routed.py`（单测 15 skipped）。
+- 没有 AMD rdna3 版本，在 W7900D 上走通用实现。
+
+### 算子列表
+
+| 算子 | 说明（按功能） | 实现相关 PR（示例） |
+|---|---|---|
+| `causal_conv3d_cat_pad` | 3D causal conv + cat/pad | [#255](https://github.com/flagos-ai/FlagGems-sglang/pull/255) |
+| `chunk_kda_scaled_dot_kkt` | KDA scaled dot KKT | [#268](https://github.com/flagos-ai/FlagGems-sglang/pull/268) |
+| `fused_append_shared_experts` | MoE shared expert 拼接 | [#277](https://github.com/flagos-ai/FlagGems-sglang/pull/277) |
+| `gemma_dual_rmsnorm_residual_scalar` | 双路 Gemma RMSNorm + 残差标量 | [#258](https://github.com/flagos-ai/FlagGems-sglang/pull/258) |
+| `gemma_qkv_rmsnorm` | QKV Gemma RMSNorm | [#261](https://github.com/flagos-ai/FlagGems-sglang/pull/261) |
+| `gemma_rmsnorm` | Gemma RMSNorm | [#262](https://github.com/flagos-ai/FlagGems-sglang/pull/262) |
+| `gemma_rmsnorm_residual_scalar` | Gemma RMSNorm + 残差标量 | [#260](https://github.com/flagos-ai/FlagGems-sglang/pull/260) |
+| `grouped_gemm` | 分组 GEMM | [#273](https://github.com/flagos-ai/FlagGems-sglang/pull/273) |
+| `kda_gate_chunk_cumsum` | KDA gate chunk cumsum | [#259](https://github.com/flagos-ai/FlagGems-sglang/pull/259) |
+| `kda_prologue` | KDA prologue | [#264](https://github.com/flagos-ai/FlagGems-sglang/pull/264) |
+| `normalize_and_patchify` | 归一化 + patchify | [#254](https://github.com/flagos-ai/FlagGems-sglang/pull/254) |
+| `step_a_q` / `step_a_v` / `step_b_q` / `step_b_v` | LoRA step A/B（Q/V） | [#257](https://github.com/flagos-ai/FlagGems-sglang/pull/257)、[#266](https://github.com/flagos-ai/FlagGems-sglang/pull/266)、[#267](https://github.com/flagos-ai/FlagGems-sglang/pull/267)、[#265](https://github.com/flagos-ai/FlagGems-sglang/pull/265) |
+| `swiglu_oai_split` | SwiGLU OAI split | [#253](https://github.com/flagos-ai/FlagGems-sglang/pull/253) |
+
+### 状态
+
+W7900D 上单测 161 passed；按第三轮口径摸底后：**6 个已接近拷贝、2 个只有小形状、8 个算力型**（详见 `W7900D_AMD_optimization.md`「batch10 摸底」）。没有新的「≥1.5× 且病因明确」访存型优化目标。RTX 4090 / R9700 未测。
+
+## 1bb7755 → 5c2ed0f：新增 18 个
+
+### 提交范围
+
+| | 提交 | 日期 | 提交说明 |
+|---|---|---|---|
+| 起点 | [1bb7755](https://github.com/flagos-ai/FlagGems-sglang/commit/1bb775548f346e2af0199cdc61dbd405a3e5c738) | 2026-11-09 | Merge pull request #327 from liuhycs/fix/lora-step-av-bv-flagtree-eviction-crash |
+| 终点 | [5c2ed0f](https://github.com/flagos-ai/FlagGems-sglang/commit/5c2ed0f15b6d644f8e4bcbeae7236a22b6959eaa) | 2026-11-12 | Merge pull request #339 from flagos-ai/flagos-sglang-batch11（记录时的 master） |
+
+两者之间共 52 个提交，见 [1bb7755...5c2ed0f](https://github.com/flagos-ai/FlagGems-sglang/compare/1bb7755...5c2ed0f)。其间还合入了 [#331](https://github.com/flagos-ai/FlagGems-sglang/pull/331)（gfx1100 的 `chunked_embedding_lora_a`、`qkv_lora_b`、`get_target_cache_loc`），并给全部算子补了 `baseline/` 目录。
+
+### 来源
+
+- 18 个算子实现来自 FlagOS 竞赛 Track1 的参赛 PR，2026-11-10 至 11-11 合入（见下表）。
+- 参考实现、单测和 benchmark 由 [#339](https://github.com/flagos-ai/FlagGems-sglang/pull/339)（batch11，2026-11-12 合入）补齐 17 个，`conf/operators.yaml` 从 147 条增加到 164 条；`silu_and_mul_routed` 的 reference/单测此前已由 batch10（#303）加入。
+- 没有 AMD rdna3 版本，在 W7900D 上走通用实现。除 `zimage_qk_rmsnorm`、`silu_and_mul_routed` 外都是量化类；gfx1100 没有 FP8 矩阵指令，FP8 / MXFP8 / FP4 类能否在这张卡上运行要先跑单测确认。
+
+### 算子列表
+
+说明按算子名归类，未逐一核对实现。
+
+| 算子 | 说明 | 实现 PR |
+|---|---|---|
+| `awq_dequantize` | AWQ 反量化 | [#314](https://github.com/flagos-ai/FlagGems-sglang/pull/314) |
+| `awq_gemm` | AWQ 量化权重的 GEMM | [#324](https://github.com/flagos-ai/FlagGems-sglang/pull/324) |
+| `fp8_quantize` | FP8 量化 | [#312](https://github.com/flagos-ai/FlagGems-sglang/pull/312) |
+| `mxfp8_block_scaled_matmul` | MXFP8 块缩放 matmul | [#315](https://github.com/flagos-ai/FlagGems-sglang/pull/315) |
+| `per_tensor_absmax_fp8` | 按张量求 absmax（FP8 缩放） | [#311](https://github.com/flagos-ai/FlagGems-sglang/pull/311) |
+| `per_tensor_quant_fp8` | 按张量 FP8 量化 | [#306](https://github.com/flagos-ai/FlagGems-sglang/pull/306) |
+| `per_token_group_quant_8bit_v2` | 按 token 分组 8 bit 量化（v2） | [#310](https://github.com/flagos-ai/FlagGems-sglang/pull/310) |
+| `per_token_group_quant_fp8` | 按 token 分组 FP8 量化 | [#309](https://github.com/flagos-ai/FlagGems-sglang/pull/309) |
+| `per_token_group_quant_fp8_moe_mn_major` | 按 token 分组 FP8 量化（MoE，MN-major 布局） | [#300](https://github.com/flagos-ai/FlagGems-sglang/pull/300) |
+| `per_token_quant_int8_sum` | 按 token INT8 量化并求和 | [#308](https://github.com/flagos-ai/FlagGems-sglang/pull/308) |
+| `quant_store_kv_mxfp8` | KV 缓存 MXFP8 量化写入 | [#301](https://github.com/flagos-ai/FlagGems-sglang/pull/301) |
+| `quantize_fp4_indexer` | FP4 量化（indexer） | [#302](https://github.com/flagos-ai/FlagGems-sglang/pull/302) |
+| `silu_and_mul_routed` | 按路由的 SiLU×mul（MoE） | [#269](https://github.com/flagos-ai/FlagGems-sglang/pull/269) |
+| `store_sf_interleaved` | 缩放因子交错存储 | [#296](https://github.com/flagos-ai/FlagGems-sglang/pull/296) |
+| `to_mxfp8` | 转换为 MXFP8 | [#297](https://github.com/flagos-ai/FlagGems-sglang/pull/297) |
+| `triton_scaled_mm` | 带缩放的 matmul | [#305](https://github.com/flagos-ai/FlagGems-sglang/pull/305) |
+| `w8a8_block_fp8_matmul` | W8A8 块 FP8 matmul | [#304](https://github.com/flagos-ai/FlagGems-sglang/pull/304) |
+| `zimage_qk_rmsnorm` | Z-Image（扩散）的 q/k RMSNorm | [#307](https://github.com/flagos-ai/FlagGems-sglang/pull/307) |
+
+### 状态
+
+三张卡都还没有测。W7900D 上下一步是先跑单测，看 FP8 类在 gfx1100 上能否运行，再按第三轮口径摸底。
 
 ## W7900D 摸底
 
-这 85 个算子在 W7900D（gfx1100）上测过一轮：68 个有 benchmark 的用 benchmark 自己的输入，其中 10 个调不通的改用单测里的用例，最新 17 个没有 benchmark、按通用实现的签名和代码里写死的形状分支自己构造输入。单测除 `residual_gate_add` 外都通过。结论是大多数已跑在这张卡的可达带宽附近，当时最值得优化的是 `tiny_n_gemm`、`get_target_cache_loc`、`top_p_renorm`、`recompute_w_u`。其中 `tiny_n_gemm`、`top_p_renorm` 已合入 [#298](https://github.com/flagos-ai/FlagGems-sglang/pull/298)：rdna3 `tiny_n_gemm` 对 M>1 一律 split-K，官方 benchmark n=1536 快 5.42–5.61 倍、n=512 快 1.44–1.56 倍；rdna3 `top_p_renorm` 用探测点 + Anderson–Björck 减少搜索遍数，官方 benchmark 快 1.35–2.32 倍；同 PR 还修了通用 split-K 对 K 尾部的掩码。还剩 `get_target_cache_loc`（封装里三处主机取值，连续调用 70.4 µs 里只有 19.7 µs 在 GPU 上）和 `recompute_w_u`（`_packed_dot` 有 64 条 2 字节访存对 12 条 16 字节）。详情见 `W7900D_AMD_optimization.md` 的「`tiny_n_gemm` 复核」「`tiny_n_gemm` / `top_p_renorm`（2026-11-09）」。
+这 85 个算子在 W7900D（gfx1100）上测过一轮：68 个有 benchmark 的用 benchmark 自己的输入，其中 10 个调不通的改用单测里的用例，最新 17 个没有 benchmark、按通用实现的签名和代码里写死的形状分支自己构造输入。单测除 `residual_gate_add` 外都通过。结论是大多数已跑在这张卡的可达带宽附近，当时最值得优化的是 `tiny_n_gemm`、`get_target_cache_loc`、`top_p_renorm`、`recompute_w_u`。其中 `tiny_n_gemm`、`top_p_renorm` 已合入 [#298](https://github.com/flagos-ai/FlagGems-sglang/pull/298)；`get_target_cache_loc` 与 `chunked_embedding_lora_a`、`qkv_lora_b` 已合入 [#331](https://github.com/flagos-ai/FlagGems-sglang/pull/331)；第三批还剩 `chunked_sgmv_shrink`、`recompute_w_u`。详情见 `W7900D_AMD_optimization.md`。
 
-这些算子后来和早先的 56 个放在同一口径下重新测过、重新分了批，口径（含为什么按整张量算字节数会把 KV cache 这类算子算出 2263% 的带宽）、逐算子数据和新的分批都在 `W7900D_AMD_optimization.md` 的「第三轮」，完整排名表在 `opt_w7900d/survey/results/batches.md`。
+这些算子后来和早先的 56 个放在同一口径下重新测过、重新分了批，口径、逐算子数据和新的分批都在 `W7900D_AMD_optimization.md` 的「第三轮」；batch10 16 个与 SGLang 接入正确性见同文档 2026-11-10 两节。完整排名表在 `opt_w7900d/survey/results/batches.md`。

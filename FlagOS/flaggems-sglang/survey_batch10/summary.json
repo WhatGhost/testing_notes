@@ -1,0 +1,185 @@
+{
+  "spill_bytes_lane_max_seen": 1444,
+  "ops": {
+    "causal_conv3d_cat_pad": {
+      "bucket": "small_only",
+      "n_shapes": 3,
+      "n_ok": 3,
+      "n_ge_30us": 0,
+      "max_ratio": null,
+      "min_ratio": null,
+      "max_host_frac": null,
+      "max_latency_us": 19.27047356462942,
+      "errors": []
+    },
+    "chunk_kda_scaled_dot_kkt": {
+      "bucket": "compute",
+      "n_shapes": 4,
+      "n_ok": 4,
+      "n_ge_30us": 2,
+      "max_ratio": 2.3499891891316085,
+      "min_ratio": 1.7909439766398316,
+      "max_host_frac": 0.02303250307978828,
+      "max_latency_us": 478.18911987454146,
+      "errors": []
+    },
+    "fused_append_shared_experts": {
+      "bucket": "small_only",
+      "n_shapes": 6,
+      "n_ok": 6,
+      "n_ge_30us": 0,
+      "max_ratio": null,
+      "min_ratio": null,
+      "max_host_frac": null,
+      "max_latency_us": 11.743454573055109,
+      "errors": []
+    },
+    "gemma_dual_rmsnorm_residual_scalar": {
+      "bucket": "near_copy",
+      "n_shapes": 15,
+      "n_ok": 15,
+      "n_ge_30us": 5,
+      "max_ratio": 0.7267541024641372,
+      "min_ratio": 0.5194702791492152,
+      "max_host_frac": 0.09570499054646381,
+      "max_latency_us": 505.0881915622287,
+      "errors": []
+    },
+    "gemma_qkv_rmsnorm": {
+      "bucket": "near_copy",
+      "n_shapes": 5,
+      "n_ok": 5,
+      "n_ge_30us": 2,
+      "max_ratio": 0.5185030448346558,
+      "min_ratio": 0.3683546253766578,
+      "max_host_frac": 0.13901883315979635,
+      "max_latency_us": 145.4114884682442,
+      "errors": []
+    },
+    "gemma_rmsnorm": {
+      "bucket": "near_copy",
+      "n_shapes": 15,
+      "n_ok": 15,
+      "n_ge_30us": 4,
+      "max_ratio": 0.67704940681254,
+      "min_ratio": 0.48749471031560876,
+      "max_host_frac": 0.13019798688517903,
+      "max_latency_us": 331.20514326784985,
+      "errors": []
+    },
+    "gemma_rmsnorm_residual_scalar": {
+      "bucket": "near_copy",
+      "n_shapes": 15,
+      "n_ok": 15,
+      "n_ge_30us": 5,
+      "max_ratio": 0.7471120778016875,
+      "min_ratio": 0.5195949727087849,
+      "max_host_frac": 0.09669844658789985,
+      "max_latency_us": 441.8989932292128,
+      "errors": []
+    },
+    "grouped_gemm": {
+      "bucket": "compute",
+      "n_shapes": 6,
+      "n_ok": 6,
+      "n_ge_30us": 6,
+      "max_ratio": 1.571207538286821,
+      "min_ratio": 0.580934065256922,
+      "max_host_frac": 0.038144445899739,
+      "max_latency_us": 460.55325269699097,
+      "errors": []
+    },
+    "kda_gate_chunk_cumsum": {
+      "bucket": "compute",
+      "n_shapes": 4,
+      "n_ok": 4,
+      "n_ge_30us": 2,
+      "max_ratio": 0.5922348092454457,
+      "min_ratio": 0.40524374225936777,
+      "max_host_frac": 0.07973920890183987,
+      "max_latency_us": 233.61493365801113,
+      "errors": []
+    },
+    "kda_prologue": {
+      "bucket": "compute",
+      "n_shapes": 4,
+      "n_ok": 4,
+      "n_ge_30us": 3,
+      "max_ratio": 0.5684350230329974,
+      "min_ratio": 0.4462188707522983,
+      "max_host_frac": 0.07794365769251958,
+      "max_latency_us": 593.087856220988,
+      "errors": []
+    },
+    "normalize_and_patchify": {
+      "bucket": "near_copy",
+      "n_shapes": 3,
+      "n_ok": 3,
+      "n_ge_30us": 1,
+      "max_ratio": 0.6791361366525448,
+      "min_ratio": 0.6791361366525448,
+      "max_host_frac": 0.07893473909510691,
+      "max_latency_us": 137.7227961753322,
+      "errors": []
+    },
+    "step_a_q": {
+      "bucket": "compute",
+      "n_shapes": 2,
+      "n_ok": 2,
+      "n_ge_30us": 2,
+      "max_ratio": 0.6003074542960091,
+      "min_ratio": 0.5205311083723864,
+      "max_host_frac": 0.06560443562360205,
+      "max_latency_us": 81.76962226515508,
+      "errors": []
+    },
+    "step_a_v": {
+      "bucket": "compute",
+      "n_shapes": 2,
+      "n_ok": 2,
+      "n_ge_30us": 2,
+      "max_ratio": 0.8700745035494237,
+      "min_ratio": 0.6971944390908229,
+      "max_host_frac": 0.03663032707915825,
+      "max_latency_us": 350.534982716336,
+      "errors": []
+    },
+    "step_b_q": {
+      "bucket": "compute",
+      "n_shapes": 2,
+      "n_ok": 2,
+      "n_ge_30us": 2,
+      "max_ratio": 0.6812679460986834,
+      "min_ratio": 0.5340387448029267,
+      "max_host_frac": 0.00959553105019107,
+      "max_latency_us": 471.38961032032967,
+      "errors": []
+    },
+    "step_b_v": {
+      "bucket": "compute",
+      "n_shapes": 2,
+      "n_ok": 2,
+      "n_ge_30us": 2,
+      "max_ratio": 0.6574877107068436,
+      "min_ratio": 0.5314629082536348,
+      "max_host_frac": 0.05278464012885307,
+      "max_latency_us": 216.48656328519186,
+      "errors": []
+    },
+    "swiglu_oai_split": {
+      "bucket": "near_copy",
+      "n_shapes": 15,
+      "n_ok": 15,
+      "n_ge_30us": 5,
+      "max_ratio": 0.7093624884956403,
+      "min_ratio": 0.5235727329115956,
+      "max_host_frac": 0.14601585810572584,
+      "max_latency_us": 604.5536113386395,
+      "errors": []
+    }
+  },
+  "device": "AMD Radeon Graphics",
+  "min_us": 30.0,
+  "warmup": 100,
+  "rep": 100
+}

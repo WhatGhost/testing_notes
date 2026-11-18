@@ -1,0 +1,786 @@
+[
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=1 k=4",
+  "sgl": 8.63999966531992,
+  "master": 8.679999969899654,
+  "new": 8.63999966531992
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=1 k=16",
+  "sgl": 8.559999987483025,
+  "master": 8.799999952316284,
+  "new": 8.799999952316284
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=1 k=64",
+  "sgl": 15.159999951720238,
+  "master": 9.239999577403069,
+  "new": 9.239999577403069
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=64 k=4",
+  "sgl": 8.87999963015318,
+  "master": 8.87999963015318,
+  "new": 8.87999963015318
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=64 k=16",
+  "sgl": 9.920000098645687,
+  "master": 9.960000403225422,
+  "new": 9.960000403225422
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=64 k=64",
+  "sgl": 20.919999107718468,
+  "master": 43.480001389980316,
+  "new": 15.039999969303608
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=1024 k=4",
+  "sgl": 13.84000014513731,
+  "master": 13.880000449717045,
+  "new": 14.039999805390835
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=1024 k=16",
+  "sgl": 31.599998474121094,
+  "master": 31.71899914741516,
+  "new": 31.71899914741516
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=1024 k=64",
+  "sgl": 175.59799551963806,
+  "master": 98.43900054693222,
+  "new": 98.15900027751923
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=4096 k=4",
+  "sgl": 30.68000078201294,
+  "master": 32.40000084042549,
+  "new": 32.43900090456009
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=4096 k=16",
+  "sgl": 103.83900254964828,
+  "master": 110.65899953246117,
+  "new": 97.23900258541107
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "official",
+  "shape": "rows=4096 k=64",
+  "sgl": 594.8559939861298,
+  "master": 346.1180031299591,
+  "new": 345.9570109844208
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=8 k=64",
+  "sgl": 15.479999594390392,
+  "master": 41.59900173544884,
+  "new": 10.92000026255846
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=16 k=64",
+  "sgl": 16.039999201893806,
+  "master": 41.56000167131424,
+  "new": 11.19999960064888
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=32 k=64",
+  "sgl": 17.20000058412552,
+  "master": 41.79999977350235,
+  "new": 11.800000444054604
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=128 k=64",
+  "sgl": 35.41949950158596,
+  "master": 46.92000150680542,
+  "new": 23.800000548362732
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=256 k=64",
+  "sgl": 62.67999857664108,
+  "master": 61.95899844169617,
+  "new": 34.29949842393398
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=512 k=64",
+  "sgl": 125.559002161026,
+  "master": 122.83899635076523,
+  "new": 59.51999872922897
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=2048 k=16",
+  "sgl": 62.23899871110916,
+  "master": 62.39999830722809,
+  "new": 54.19899895787239
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=8192 k=16",
+  "sgl": 219.758503139019,
+  "master": 253.59800457954407,
+  "new": 197.43900001049042
+ },
+ {
+  "op": "fused_softmax_pool",
+  "kind": "extra",
+  "shape": "rows=16384 k=16",
+  "sgl": 374.2380142211914,
+  "master": 430.8370053768158,
+  "new": 355.6370139122009
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=128 rows/group=16",
+  "sgl": 8.960000239312649,
+  "master": 8.960000239312649,
+  "new": 8.960000239312649
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=128 rows/group=128",
+  "sgl": 10.160000063478947,
+  "master": 10.6800002977252,
+  "new": 10.15899982303381
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=128 rows/group=1024",
+  "sgl": 21.75999991595745,
+  "master": 25.439999997615814,
+  "new": 16.79999940097332
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=512 rows/group=16",
+  "sgl": 9.359999559819698,
+  "master": 9.320000186562538,
+  "new": 9.318999946117401
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=512 rows/group=128",
+  "sgl": 20.959499292075634,
+  "master": 12.600000016391277,
+  "new": 12.600000016391277
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=512 rows/group=1024",
+  "sgl": 223.3389988541603,
+  "master": 56.120000779628754,
+  "new": 56.07999861240387
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=4096 rows/group=16",
+  "sgl": 17.000000923871994,
+  "master": 12.640000320971012,
+  "new": 12.839999981224537
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=4096 rows/group=128",
+  "sgl": 233.5589975118637,
+  "master": 45.83999887108803,
+  "new": 45.68000137805939
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "official",
+  "shape": "bf16 groups=8 k=4096 rows/group=1024",
+  "sgl": 2713.831901550293,
+  "master": 525.0785052776337,
+  "new": 524.4984924793243
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=128 rows/group~256",
+  "sgl": 11.680000461637974,
+  "master": 12.959999963641167,
+  "new": 11.119999922811985
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=128 rows/group~512",
+  "sgl": 14.600000344216824,
+  "master": 17.079999670386314,
+  "new": 13.079999946057796
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=128 rows/group~2048",
+  "sgl": 39.23900052905083,
+  "master": 49.04000088572502,
+  "new": 27.2000003606081
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=256 rows/group~512",
+  "sgl": 29.79999966919422,
+  "master": 19.920000806450844,
+  "new": 16.759999096393585
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=256 rows/group~1024",
+  "sgl": 63.19999694824219,
+  "master": 32.48000144958496,
+  "new": 27.27999910712242
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=256 rows/group~2048",
+  "sgl": 125.0,
+  "master": 54.96000126004219,
+  "new": 48.39999973773956
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=128 rows/group~243 uneven",
+  "sgl": 11.839999817311764,
+  "master": 15.680000185966492,
+  "new": 11.31999958306551
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=128 rows/group~726 uneven",
+  "sgl": 18.200000748038292,
+  "master": 28.07999961078167,
+  "new": 15.119999647140503
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=32 k=128 rows/group~256",
+  "sgl": 21.99999988079071,
+  "master": 16.839999705553055,
+  "new": 16.680000349879265
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=128 rows/group~128",
+  "sgl": 10.160000063478947,
+  "master": 10.92000026255846,
+  "new": 10.400000028312206
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "bf16 groups=8 k=256 rows/group~128",
+  "sgl": 12.760000303387642,
+  "master": 11.52000017464161,
+  "new": 11.16000022739172
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "fp32 groups=8 k=128 rows/group~128",
+  "sgl": 11.599999852478504,
+  "master": 11.479999870061874,
+  "new": 11.359999887645245
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "fp32 groups=8 k=128 rows/group~1024",
+  "sgl": 54.55999821424484,
+  "master": 31.520001590251923,
+  "new": 26.079999282956123
+ },
+ {
+  "op": "per_group_transpose",
+  "kind": "extra",
+  "shape": "fp32 groups=8 k=128 rows/group~2048",
+  "sgl": 109.71999913454056,
+  "master": 54.43999916315079,
+  "new": 50.519999116659164
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "official",
+  "shape": "batch=1 tokens=1 heads=16 head_dim=128",
+  "sgl": 8.72000027447939,
+  "master": 8.72000027447939,
+  "new": 8.919999934732914
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "official",
+  "shape": "batch=1 tokens=64 heads=16 head_dim=128",
+  "sgl": 10.080000385642052,
+  "master": 10.359999723732471,
+  "new": 10.359999723732471
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "official",
+  "shape": "batch=1 tokens=1024 heads=16 head_dim=128",
+  "sgl": 42.04000160098076,
+  "master": 41.120000183582306,
+  "new": 36.720000207424164
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "official",
+  "shape": "batch=1 tokens=8192 heads=16 head_dim=128",
+  "sgl": 364.03900384902954,
+  "master": 398.8800048828125,
+  "new": 306.0399889945984
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=1 tokens=256 heads=16 head_dim=128",
+  "sgl": 15.119999647140503,
+  "master": 14.960000291466713,
+  "new": 15.159999951720238
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=1 tokens=512 heads=16 head_dim=128",
+  "sgl": 24.560000747442245,
+  "master": 24.960000067949295,
+  "new": 22.360000759363174
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=1 tokens=4096 heads=16 head_dim=128",
+  "sgl": 191.40000641345978,
+  "master": 203.40000092983246,
+  "new": 156.15999698638916
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=1 tokens=16384 heads=16 head_dim=128",
+  "sgl": 535.5800092220306,
+  "master": 572.2799897193909,
+  "new": 457.7600061893463
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=1 tokens=8192 heads=32 head_dim=128",
+  "sgl": 499.83999133110046,
+  "master": 563.959002494812,
+  "new": 453.99999618530273
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=4 tokens=1024 heads=16 head_dim=128",
+  "sgl": 165.4599979519844,
+  "master": 174.8799979686737,
+  "new": 147.20000326633453
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=2 tokens=512 heads=8 head_dim=128",
+  "sgl": 23.04000034928322,
+  "master": 22.63999916613102,
+  "new": 22.760000079870224
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=1 tokens=2048 heads=16 head_dim=64",
+  "sgl": 39.319999516010284,
+  "master": 38.32000121474266,
+  "new": 35.840000957250595
+ },
+ {
+  "op": "ltx2_split_rotary",
+  "kind": "extra",
+  "shape": "batch=1 tokens=4096 heads=24 head_dim=128",
+  "sgl": 305.3399920463562,
+  "master": 294.979989528656,
+  "new": 250.07998943328857
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "official",
+  "shape": "M=1 K=7168 N=2112",
+  "sgl": 161.16000711917877,
+  "master": 87.81950175762177,
+  "new": 87.83899992704391
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "official",
+  "shape": "M=2 K=7168 N=2112",
+  "sgl": 159.31999683380127,
+  "master": 90.31949937343597,
+  "new": 90.36000072956085
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "official",
+  "shape": "M=4 K=7168 N=2112",
+  "sgl": 161.37900203466415,
+  "master": 114.07899856567383,
+  "new": 100.91999918222427
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "official",
+  "shape": "M=8 K=7168 N=2112",
+  "sgl": 160.0790023803711,
+  "master": 125.83999335765839,
+  "new": 99.44000095129013
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "official",
+  "shape": "M=16 K=7168 N=2112",
+  "sgl": 162.25899755954742,
+  "master": 130.19900023937225,
+  "new": 100.51999986171722
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=3 K=7168 N=2112",
+  "sgl": 159.43899750709534,
+  "master": 113.3200004696846,
+  "new": 99.04000163078308
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=4 K=7168 N=1536",
+  "sgl": 154.35899794101715,
+  "master": 88.76000344753265,
+  "new": 84.51999723911285
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=16 K=7168 N=1536",
+  "sgl": 155.67900240421295,
+  "master": 105.59999942779541,
+  "new": 84.6790000796318
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=4 K=7168 N=576",
+  "sgl": 49.23899844288826,
+  "master": 45.239001512527466,
+  "new": 37.51999884843826
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=16 K=7168 N=576",
+  "sgl": 50.27949996292591,
+  "master": 42.15899854898453,
+  "new": 38.359999656677246
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=4 K=7168 N=3072",
+  "sgl": 177.39899456501007,
+  "master": 154.28000688552856,
+  "new": 151.699498295784
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=16 K=7168 N=3072",
+  "sgl": 181.48000538349152,
+  "master": 196.69950008392334,
+  "new": 152.43899822235107
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=8 K=5120 N=2112",
+  "sgl": 128.63899767398834,
+  "master": 110.18000170588493,
+  "new": 84.83999967575073
+ },
+ {
+  "op": "dsv3_fused_a_gemm",
+  "kind": "extra",
+  "shape": "M=8 K=8192 N=2112",
+  "sgl": 175.8190020918846,
+  "master": 123.08000028133392,
+  "new": 109.83999818563461
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "official",
+  "shape": "segs=8 tokens=4096 adapters=4 rank=32 vocab=32000",
+  "sgl": 40.8799983561039,
+  "master": 35.48000007867813,
+  "new": 35.39999946951866
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "official",
+  "shape": "segs=4 tokens=8192 adapters=2 rank=64 vocab=128256",
+  "sgl": 125.43900310993195,
+  "master": 114.6790012717247,
+  "new": 106.27850145101547
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "official",
+  "shape": "segs=1 tokens=5 adapters=1 rank=16 vocab=128",
+  "sgl": 13.51999957114458,
+  "master": 9.279999881982803,
+  "new": 9.320000186562538
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "official",
+  "shape": "segs=4 tokens=22 adapters=2 rank=32 vocab=512",
+  "sgl": 13.63999955356121,
+  "master": 9.359999559819698,
+  "new": 9.359999559819698
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "official",
+  "shape": "segs=2 tokens=13 adapters=2 rank=16 vocab=256 extra=8",
+  "sgl": 13.559999875724316,
+  "master": 9.359999559819698,
+  "new": 9.359999559819698
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "extra",
+  "shape": "segs=4 tokens=8192 adapters=1 rank=64 vocab=32000",
+  "sgl": 43.12000051140785,
+  "master": 34.60000082850456,
+  "new": 24.55900050699711
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "extra",
+  "shape": "segs=8 tokens=16384 adapters=1 rank=64 vocab=32000",
+  "sgl": 61.13949976861477,
+  "master": 46.76000028848648,
+  "new": 33.51999819278717
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "extra",
+  "shape": "segs=1 tokens=4096 adapters=1 rank=128 vocab=32000",
+  "sgl": 61.43999844789505,
+  "master": 50.95899850130081,
+  "new": 36.75999864935875
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "extra",
+  "shape": "segs=8 tokens=16384 adapters=1 rank=128 vocab=32000",
+  "sgl": 120.03900110721588,
+  "master": 94.47900205850601,
+  "new": 60.03899872303009
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "extra",
+  "shape": "segs=8 tokens=16384 adapters=1 rank=64 vocab=128256",
+  "sgl": 113.47900331020355,
+  "master": 92.43950247764587,
+  "new": 71.87899947166443
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "extra",
+  "shape": "segs=4 tokens=8192 adapters=4 rank=128 vocab=128256",
+  "sgl": 336.4564925432205,
+  "master": 335.39700508117676,
+  "new": 319.5970058441162
+ },
+ {
+  "op": "embedding_lora_a",
+  "kind": "extra",
+  "shape": "segs=1 tokens=2048 adapters=1 rank=64 vocab=128256",
+  "sgl": 62.27999925613403,
+  "master": 53.918998688459396,
+  "new": 48.48000034689903
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "official",
+  "shape": "batch=1 vocab=152064 fp32",
+  "sgl": 9.55899991095066,
+  "master": 10.400000028312206,
+  "new": 10.439000092446804
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "official",
+  "shape": "batch=8 vocab=152064 fp32",
+  "sgl": 24.480000138282776,
+  "master": 28.4000001847744,
+  "new": 28.55899930000305
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "official",
+  "shape": "batch=64 vocab=152064 fp32",
+  "sgl": 142.11900532245636,
+  "master": 273.59798550605774,
+  "new": 242.15899407863617
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "official",
+  "shape": "batch=512 vocab=152064 fp32",
+  "sgl": 1086.1549973487854,
+  "master": 1135.195016860962,
+  "new": 1091.1959409713745
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "official",
+  "shape": "batch=4096 vocab=152064 fp32",
+  "sgl": 8644.783020019531,
+  "master": 7701.2481689453125,
+  "new": 7547.647953033447
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "official",
+  "shape": "batch=3 vocab=100 fp32",
+  "sgl": 9.359999559819698,
+  "master": 8.799999952316284,
+  "new": 8.799999952316284
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "official",
+  "shape": "batch=7 vocab=1000 fp32",
+  "sgl": 9.318999946117401,
+  "master": 8.799999952316284,
+  "new": 8.839000016450882
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "official",
+  "shape": "batch=1 vocab=32000 fp32",
+  "sgl": 9.279999881982803,
+  "master": 9.080000221729279,
+  "new": 9.080000221729279
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "extra",
+  "shape": "batch=10 vocab=152064 fp32",
+  "sgl": 27.000000700354576,
+  "master": 35.48000007867813,
+  "new": 32.83999860286713
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "extra",
+  "shape": "batch=16 vocab=152064 fp32",
+  "sgl": 39.96000066399574,
+  "master": 59.84000116586685,
+  "new": 49.19999837875366
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "extra",
+  "shape": "batch=32 vocab=152064 fp32",
+  "sgl": 72.15999811887741,
+  "master": 131.3599944114685,
+  "new": 103.8995012640953
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "extra",
+  "shape": "batch=256 vocab=152064 fp32",
+  "sgl": 540.037989616394,
+  "master": 675.0375032424927,
+  "new": 632.8780055046082
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "extra",
+  "shape": "batch=48 vocab=32000 fp32",
+  "sgl": 27.76000089943409,
+  "master": 36.159999668598175,
+  "new": 33.19999948143959
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "extra",
+  "shape": "batch=64 vocab=32000 fp32",
+  "sgl": 34.19899940490723,
+  "master": 49.99899864196777,
+  "new": 41.760001331567764
+ },
+ {
+  "op": "apply_token_bitmask",
+  "kind": "extra",
+  "shape": "batch=64 vocab=128256 fp32",
+  "sgl": 121.08000367879868,
+  "master": 230.44000566005707,
+  "new": 196.79899513721466
+ }
+]

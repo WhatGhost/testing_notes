@@ -1,0 +1,132 @@
+[
+ {
+  "model": "35B",
+  "T": 1,
+  "err": {
+   "sglang": 0.00390625,
+   "master": 0.001953125,
+   "new": 7.62939453125e-06
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 2,
+  "err": {
+   "sglang": 0.00244140625,
+   "master": 0.0009765625,
+   "new": 0.000244140625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 4,
+  "err": {
+   "sglang": 0.00390625,
+   "master": 0.0009765625,
+   "new": 0.0009765625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 8,
+  "err": {
+   "sglang": 0.00390625,
+   "master": 0.0009765625,
+   "new": 0.0009765625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 16,
+  "err": {
+   "sglang": 0.00390625,
+   "master": 0.001953125,
+   "new": 0.00048828125
+  },
+  "same_as_unit_ref": true
+ },
+ {
+  "model": "35B",
+  "T": 32,
+  "err": {
+   "sglang": 0.00390625,
+   "master": 0.0009765625,
+   "new": 0.0009765625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 64,
+  "err": {
+   "sglang": 0.00390625,
+   "master": 0.001953125,
+   "new": 0.0009765625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 128,
+  "err": {
+   "sglang": 0.00390625,
+   "master": 0.00390625,
+   "new": 0.00390625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 256,
+  "err": {
+   "sglang": 0.0078125,
+   "master": 0.001953125,
+   "new": 0.001953125
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 512,
+  "err": {
+   "sglang": 0.00421142578125,
+   "master": 0.001953125,
+   "new": 0.001953125
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "35B",
+  "T": 1024,
+  "err": {
+   "sglang": 0.015625,
+   "master": 0.001953125,
+   "new": 0.001953125
+  },
+  "same_as_unit_ref": null
+ },
+ {
+  "model": "35B",
+  "T": 2048,
+  "err": {
+   "sglang": 0.0078125,
+   "master": 0.00390625,
+   "new": 0.00390625
+  },
+  "same_as_unit_ref": null
+ },
+ {
+  "model": "35B",
+  "T": 4096,
+  "err": {
+   "sglang": 0.0078125,
+   "master": 0.00390625,
+   "new": 0.00390625
+  },
+  "same_as_unit_ref": null
+ }
+]

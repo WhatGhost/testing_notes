@@ -1,0 +1,132 @@
+[
+ {
+  "model": "official",
+  "T": 1,
+  "err": {
+   "sglang": 0.015625,
+   "master": 0.00048828125,
+   "new": 0.000244140625
+  },
+  "same_as_unit_ref": true
+ },
+ {
+  "model": "official",
+  "T": 2,
+  "err": {
+   "sglang": 0.015625,
+   "master": 0.00390625,
+   "new": 0.00390625
+  },
+  "same_as_unit_ref": true
+ },
+ {
+  "model": "official",
+  "T": 4,
+  "err": {
+   "sglang": 0.03125,
+   "master": 0.00390625,
+   "new": 0.00390625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "official",
+  "T": 8,
+  "err": {
+   "sglang": 0.015625,
+   "master": 0.0078125,
+   "new": 0.00390625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "official",
+  "T": 16,
+  "err": {
+   "sglang": 0.03125,
+   "master": 0.0078125,
+   "new": 0.0078125
+  },
+  "same_as_unit_ref": true
+ },
+ {
+  "model": "official",
+  "T": 32,
+  "err": {
+   "sglang": 0.0625,
+   "master": 0.015625,
+   "new": 0.015625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "official",
+  "T": 64,
+  "err": {
+   "sglang": 0.03125,
+   "master": 0.015625,
+   "new": 0.015625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "official",
+  "T": 128,
+  "err": {
+   "sglang": 0.0625,
+   "master": 0.015625,
+   "new": 0.015625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "official",
+  "T": 256,
+  "err": {
+   "sglang": 0.03125,
+   "master": 0.015625,
+   "new": 0.015625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "official",
+  "T": 512,
+  "err": {
+   "sglang": 0.03125,
+   "master": 0.015625,
+   "new": 0.015625
+  },
+  "same_as_unit_ref": false
+ },
+ {
+  "model": "official",
+  "T": 1024,
+  "err": {
+   "sglang": 0.0625,
+   "master": 0.015625,
+   "new": 0.015625
+  },
+  "same_as_unit_ref": null
+ },
+ {
+  "model": "official",
+  "T": 2048,
+  "err": {
+   "sglang": 0.0625,
+   "master": 0.015625,
+   "new": 0.015625
+  },
+  "same_as_unit_ref": null
+ },
+ {
+  "model": "official",
+  "T": 4096,
+  "err": {
+   "sglang": 0.0625,
+   "master": 0.03125,
+   "new": 0.03125
+  },
+  "same_as_unit_ref": null
+ }
+]

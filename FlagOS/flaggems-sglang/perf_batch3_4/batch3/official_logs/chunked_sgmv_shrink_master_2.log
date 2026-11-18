@@ -1,0 +1,13 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: chunked_sgmv_shrink  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.041680                 N/A          ([torch.Size([512, 4096]), torch.Size([4, 32, 4096])], {'batch_info': None, 'num_slices': 1})
+SUCCESS                    N/A            0.074720                 N/A          ([torch.Size([1024, 4096]), torch.Size([2, 64, 4096])], {'batch_info': None, 'num_slices': 1})
+SUCCESS                    N/A            0.016960                 N/A          ([torch.Size([8, 64]), torch.Size([1, 16, 64])], {'batch_info': None, 'num_slices': 1})
+SUCCESS                    N/A            0.017800                 N/A          ([torch.Size([64, 128]), torch.Size([2, 16, 128])], {'batch_info': None, 'num_slices': 1})
+SUCCESS                    N/A            0.019400                 N/A          ([torch.Size([32, 256]), torch.Size([2, 96, 256])], {'batch_info': None, 'num_slices': 3})
+
+.
+1 passed in 1.43s

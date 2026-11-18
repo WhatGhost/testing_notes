@@ -1,0 +1,13 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: embedding_lora_a  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.035680                 N/A          ([torch.Size([4096]), torch.Size([4, 32, 32000])], {'batch_info': None, 'vocab_size': 32000, 'extra_embeddings': None})
+SUCCESS                    N/A            0.104720                 N/A          ([torch.Size([8192]), torch.Size([2, 64, 128256])], {'batch_info': None, 'vocab_size': 128256, 'extra_embeddings': None})
+SUCCESS                    N/A            0.009280                 N/A          ([torch.Size([5]), torch.Size([1, 16, 128])], {'batch_info': None, 'vocab_size': 128, 'extra_embeddings': None})
+SUCCESS                    N/A            0.009160                 N/A          ([torch.Size([22]), torch.Size([2, 32, 512])], {'batch_info': None, 'vocab_size': 512, 'extra_embeddings': None})
+SUCCESS                    N/A            0.009400                 N/A          ([torch.Size([13]), torch.Size([2, 16, 256])], {'batch_info': None, 'vocab_size': 256, 'extra_embeddings': torch.Size([2, 8, 16])})
+
+.
+1 passed in 1.39s

@@ -1,0 +1,16 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: apply_token_bitmask  Performance Test (dtype=torch.float32, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.010680                 N/A          [torch.Size([1, 152064]), torch.Size([1, 4752])]
+SUCCESS                    N/A            0.027960                 N/A          [torch.Size([8, 152064]), torch.Size([8, 4752])]
+SUCCESS                    N/A            0.269441                 N/A          [torch.Size([64, 152064]), torch.Size([64, 4752])]
+SUCCESS                    N/A            1.135063                 N/A          [torch.Size([512, 152064]), torch.Size([512, 4752])]
+SUCCESS                    N/A            7.708842                 N/A          [torch.Size([4096, 152064]), torch.Size([4096, 4752])]
+SUCCESS                    N/A            0.008480                 N/A          [torch.Size([3, 100]), torch.Size([3, 4])]
+SUCCESS                    N/A            0.008760                 N/A          [torch.Size([7, 1000]), torch.Size([7, 32])]
+SUCCESS                    N/A            0.009400                 N/A          [torch.Size([1, 32000]), torch.Size([1, 1000])]
+
+.
+1 passed in 1.97s

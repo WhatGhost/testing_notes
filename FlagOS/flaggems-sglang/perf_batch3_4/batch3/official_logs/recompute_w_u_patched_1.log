@@ -1,0 +1,12 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: recompute_w_u  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.014121                 N/A          [torch.Size([1, 64, 4, 128]), torch.Size([1, 64, 16, 128]), torch.Size([1, 64, 16]), torch.Size([1, 64, 16]), torch.Size([1, 64, 16, 64]), None]
+SUCCESS                    N/A            0.025160                 N/A          [torch.Size([1, 256, 4, 128]), torch.Size([1, 256, 16, 128]), torch.Size([1, 256, 16]), torch.Size([1, 256, 16]), torch.Size([1, 256, 16, 64]), None]
+SUCCESS                    N/A            0.062580                 N/A          [torch.Size([1, 1024, 4, 128]), torch.Size([1, 1024, 16, 128]), torch.Size([1, 1024, 16]), torch.Size([1, 1024, 16]), torch.Size([1, 1024, 16, 64]), None]
+SUCCESS                    N/A            0.206441                 N/A          [torch.Size([1, 4096, 4, 128]), torch.Size([1, 4096, 16, 128]), torch.Size([1, 4096, 16]), torch.Size([1, 4096, 16]), torch.Size([1, 4096, 16, 64]), None]
+
+.
+1 passed in 2.04s

@@ -1,0 +1,12 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: ltx2_split_rotary  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.009120                 N/A          [torch.Size([1, 1, 2048]), torch.Size([1, 16, 1, 64]), torch.Size([1, 16, 1, 64])]
+SUCCESS                    N/A            0.010559                 N/A          [torch.Size([1, 64, 2048]), torch.Size([1, 16, 64, 64]), torch.Size([1, 16, 64, 64])]
+SUCCESS                    N/A            0.041920                 N/A          [torch.Size([1, 1024, 2048]), torch.Size([1, 16, 1024, 64]), torch.Size([1, 16, 1024, 64])]
+SUCCESS                    N/A            0.401158                 N/A          [torch.Size([1, 8192, 2048]), torch.Size([1, 16, 8192, 64]), torch.Size([1, 16, 8192, 64])]
+
+.
+1 passed in 1.13s

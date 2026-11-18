@@ -1,0 +1,20 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: fused_softmax_pool  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.009000                 N/A          [torch.Size([1, 4, 256]), 128]
+SUCCESS                    N/A            0.008840                 N/A          [torch.Size([1, 16, 256]), 128]
+SUCCESS                    N/A            0.009480                 N/A          [torch.Size([1, 64, 256]), 128]
+SUCCESS                    N/A            0.009240                 N/A          [torch.Size([64, 4, 256]), 128]
+SUCCESS                    N/A            0.010280                 N/A          [torch.Size([64, 16, 256]), 128]
+SUCCESS                    N/A            0.015080                 N/A          [torch.Size([64, 64, 256]), 128]
+SUCCESS                    N/A            0.014080                 N/A          [torch.Size([1024, 4, 256]), 128]
+SUCCESS                    N/A            0.031680                 N/A          [torch.Size([1024, 16, 256]), 128]
+SUCCESS                    N/A            0.098301                 N/A          [torch.Size([1024, 64, 256]), 128]
+SUCCESS                    N/A            0.032280                 N/A          [torch.Size([4096, 4, 256]), 128]
+SUCCESS                    N/A            0.097440                 N/A          [torch.Size([4096, 16, 256]), 128]
+SUCCESS                    N/A            0.347082                 N/A          [torch.Size([4096, 64, 256]), 128]
+
+.
+1 passed in 3.57s

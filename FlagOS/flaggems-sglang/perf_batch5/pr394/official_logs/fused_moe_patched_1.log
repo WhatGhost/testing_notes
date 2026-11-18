@@ -1,0 +1,13 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: fused_moe  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.364926                 N/A          ([torch.Size([1, 2048]), torch.Size([64, 2816, 2048]), torch.Size([64, 2048, 1408]), [torch.Size([1, 8]), torch.Size([1, 8]), None]], {'activation': 'silu', 'routed_scaling_factor': 1.0})
+SUCCESS                    N/A            1.143178                 N/A          ([torch.Size([8, 2048]), torch.Size([64, 2816, 2048]), torch.Size([64, 2048, 1408]), [torch.Size([8, 8]), torch.Size([8, 8]), None]], {'activation': 'silu', 'routed_scaling_factor': 1.0})
+SUCCESS                    N/A            1.883229                 N/A          ([torch.Size([64, 2048]), torch.Size([64, 2816, 2048]), torch.Size([64, 2048, 1408]), [torch.Size([64, 8]), torch.Size([64, 8]), None]], {'activation': 'silu', 'routed_scaling_factor': 1.0})
+SUCCESS                    N/A            2.416458                 N/A          ([torch.Size([512, 2048]), torch.Size([64, 2816, 2048]), torch.Size([64, 2048, 1408]), [torch.Size([512, 8]), torch.Size([512, 8]), None]], {'activation': 'silu', 'routed_scaling_factor': 1.0})
+SUCCESS                    N/A           11.240798                 N/A          ([torch.Size([4096, 2048]), torch.Size([64, 2816, 2048]), torch.Size([64, 2048, 1408]), [torch.Size([4096, 8]), torch.Size([4096, 8]), None]], {'activation': 'silu', 'routed_scaling_factor': 1.0})
+
+.
+1 passed in 3.62s
