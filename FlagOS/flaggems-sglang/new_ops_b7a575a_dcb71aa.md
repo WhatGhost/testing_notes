@@ -1,8 +1,8 @@
 # FlagGems-sglang 新增算子（b7a575a → 5c2ed0f）
 
-本目录 RTX 4090、W7900D、R9700 的测试都基于 flagos-ai/FlagGems-sglang 的 b7a575a，当时仓库注册了 56 个算子。到 9580d88 新增了 32 个（2026-10-21 记录），到 2aaa9b0 又新增 36 个（2026-10-29 记录），到 7e9943f 再新增 17 个（2026-11-02 记录），到 dcb71aa 又新增 6 个（2026-11-05 记录），到 1bb7755 再新增 16 个实现（2026-11-10 记录），到 5c2ed0f 再新增 18 个实现（2026-11-13 记录，含此前只有 reference/单测的 `silu_and_mul_routed`），`ops/` 共 181 个，其间没有删除或改名的算子。各段分开记录，这份清单记录的是还没有在各张卡上测完的算子，某个算子在所有卡上都测过之后就可以从这里去掉。
+本目录 RTX 4090、W7900D、R9700 的测试都基于 flagos-ai/FlagGems-sglang 的 b7a575a，当时仓库注册了 56 个算子。到 9580d88 新增了 32 个（2026-10-21 记录），到 2aaa9b0 又新增 36 个（2026-10-29 记录），到 7e9943f 再新增 17 个（2026-11-02 记录），到 dcb71aa 又新增 6 个（2026-11-05 记录），到 1bb7755 再新增 16 个实现（2026-11-10 记录），到 5c2ed0f 再新增 18 个实现（2026-11-13 记录，含此前只有 reference/单测的 `silu_and_mul_routed`），到 567d379 再新增 17 个实现（batch12，2026-11-18 记录），`ops/` 共 198 个，其间没有删除或改名的算子。各段分开记录，这份清单记录的是还没有在各张卡上测完的算子，某个算子在所有卡上都测过之后就可以从这里去掉。
 
-## 测试覆盖（2026-11-13）
+## 测试覆盖（2026-11-18）
 
 | | RTX 4090 | W7900D | R9700 |
 |---|---|---|---|
@@ -10,12 +10,13 @@
 | 第一段新增 32 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第二段新增 36 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第三段新增 17 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
-| 第四段新增 6 个 | 未测 | 只跑了单测，未计时 | 未测 |
+| 第四段新增 6 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第五段新增 16 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
-| 第六段新增 18 个 | 未测 | 未测 | 未测 |
+| 第六段新增 18 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
+| 第七段新增 17 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 
 - 三张卡的报告（`RTX4090_report.md`、`W7900D_report.md`、`R9700_report.md`）都停在 b7a575a 的 56 个算子，这些新增算子**在 RTX 4090 和 R9700 上一个都没有测过**，所以目前没有可以从这份清单里去掉的算子。
-- W7900D 上前三段的 85 个全部测了耗时，也都跑了单测。第三段的 17 个原来没有参考实现和单测，后来由 batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上，单测全部通过。第一段的 `residual_gate_add` 与 `silu_and_mul_masked` 等正确性修复已合入 [#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) / [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290)。第四段的 6 个单测全部通过，还没有计时。第五段 16 个单测 161 passed，并已按第三轮口径计时摸底。第六段 18 个（batch11，多为量化类）还没有在任何一张卡上跑过。
+- W7900D 上前三段的 85 个全部测了耗时，也都跑了单测。第三段的 17 个原来没有参考实现和单测，后来由 batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上，单测全部通过。第一段的 `residual_gate_add` 与 `silu_and_mul_masked` 等正确性修复已合入 [#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) / [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290)。第四段的 6 个单测全部通过，其中 `fused_moe`、`fused_recurrent_gated_delta_rule_packed_decode` 已随 #394 / #393 优化，其余 4 个在 2026-11-18 计时摸底。第五段 16 个单测 161 passed，并已按第三轮口径计时摸底。第六段 18 个（batch11）和第七段 17 个（batch12）在 2026-11-18 摸底：单测全部通过（FP8 类也能在 gfx1100 上运行），大多已接近拷贝速度。
 - W7900D 上做的是摸底，不是三份报告那种正式测试：用的是 benchmark 自己的形状和 `do_bench`，没有跑官方 benchmark 的全量形状，也没有做多轮稳定性复测。要把某一段标成「已测」并从清单里去掉，应当按三份报告的口径重跑。
 - 逐算子数据和在 W7900D 上的优化分批见 `W7900D_AMD_optimization.md` 的「第三轮」「batch10 摸底」「SGLang 接入正确性」。
 
@@ -382,7 +383,47 @@ W7900D 上单测 161 passed；按第三轮口径摸底后：**6 个已接近拷�
 
 ### 状态
 
-三张卡都还没有测。W7900D 上下一步是先跑单测，看 FP8 类在 gfx1100 上能否运行，再按第三轮口径摸底。
+W7900D 上 2026-11-18 摸底：单测 18 个全部通过（FP8 / MXFP8 / FP4 / AWQ 类也能运行）；按第三轮口径大多已接近拷贝速度，FP8 GEMM `w8a8_block_fp8_matmul`（15.7 TFLOPs）、`triton_scaled_mm`（31.8 TFLOPs）明显慢于同形状的 `mxfp8_block_scaled_matmul`（63.5 TFLOPs）；其中 16 个的官方 benchmark 因 dict 输入在官方 harness 里跑不起来。详见 `W7900D_AMD_optimization.md`「新算子摸底：39 个（2026-11-18）」。RTX 4090 / R9700 未测。
+
+## 5c2ed0f → 567d379：新增 17 个（batch12）
+
+### 提交范围
+
+终点是 [567d379](https://github.com/flagos-ai/FlagGems-sglang/commit/567d379d494c452fcb18b6b4895baceb5b2e7e6c)（2026-11-17，Merge pull request #391）。中间的 `3503012`（#370）只改了 `conf/operators.yaml`。全部改动见 [5c2ed0f...567d379](https://github.com/flagos-ai/FlagGems-sglang/compare/5c2ed0f...567d379)。
+
+### 来源
+
+- 参考实现、单测和 benchmark 由 [#392](https://github.com/flagos-ai/FlagGems-sglang/pull/392)（batch12，2026-11-17 合入）补齐。
+- Triton 实现来自 FlagOS 竞赛 Track1 的参赛 PR（#372–#389，每个算子一个，2026-11-17 合入）。
+- 没有 AMD rdna3 版本，在 W7900D 上走通用实现。除 `assign_extend_cache_locs_uniform`、`pad_sequence_with_mask`、`reshape_and_cache_flash` 外都与 FP8 有关，多为 DeepSeek MLA / FP8 KV cache 的辅助算子。
+
+### 算子列表
+
+说明按算子名归类，未逐一核对实现。
+
+| 算子 | 说明 |
+|---|---|
+| `absorbed_bmm_concat_cast_q_fp8` | MLA 吸收后的 q_nope × W_kc 批量 matmul，与 q_rope 拼接并转 FP8 |
+| `act_quant` | 激活的 FP8 量化 |
+| `assign_extend_cache_locs_uniform` | extend 阶段按统一长度分配 KV cache 位置 |
+| `dequantize_k_cache_fast` | FP8 K cache 反量化 |
+| `dequantize_k_cache_paged` | 分页 K cache 反量化 |
+| `fp8_per_token_to_per_tensor_quant` | FP8 按 token 缩放转为按张量缩放 |
+| `gather_dequant_requant_fp8_paged` | 分页 FP8 缓存的收集、反量化再量化 |
+| `mla_kv_pack_quantize_fp8` | MLA KV 打包并 FP8 量化 |
+| `pad_sequence_with_mask` | 变长序列填充并生成 mask |
+| `per_tensor_quant_mla_fp8` | MLA 张量的按张量 FP8 量化 |
+| `per_token_group_quant_mla_masked_fp8` | MLA 按 token 分组、带掩码的 FP8 量化 |
+| `quantize_k_cache_fast` | K cache FP8 量化 |
+| `quantize_k_cache_fast_separate` | K cache FP8 量化（nope / rope 分开） |
+| `reshape_and_cache_flash` | 把 K / V 写入分页 KV cache |
+| `set_mla_kv_buffer_fp8_quant` | 写 MLA KV buffer 并 FP8 量化 |
+| `swiglu_oai_mxfp8_quant` | OAI 风格 SwiGLU 加 MXFP8 量化 |
+| `triton_sparse_mla_fwd` | 稀疏 MLA 注意力前向（按 top-k 索引取 KV） |
+
+### 状态
+
+W7900D 上 2026-11-18 摸底：单测 17 个全部通过；大多已接近拷贝速度，`per_tensor_quant_mla_fp8`、`mla_kv_pack_quantize_fp8` 最大形状为拷贝的 1.38 / 1.36 倍（前者要读两遍输入），`triton_sparse_mla_fwd` 23.5 TFLOPs、`absorbed_bmm_concat_cast_q_fp8` 18–45 TFLOPs；17 个的官方 benchmark 都因 dict 输入在官方 harness 里跑不起来。详见 `W7900D_AMD_optimization.md`「新算子摸底：39 个（2026-11-18）」。RTX 4090 / R9700 未测。
 
 ## W7900D 摸底
 
