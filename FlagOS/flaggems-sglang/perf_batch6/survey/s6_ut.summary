@@ -1,0 +1,15 @@
+ple_gate_norm rc=0 23 passed in 7.14s
+ple_prefill_short_conv_ rc=0 6 passed in 4.48s
+ple_short_conv_ rc=0 19 passed in 9.81s
+qsa_compress_norm_mrope_store_groups rc=0 7 passed in 4.99s
+qsa_mqa_paged rc=0 4 passed in 5.57s
+qsa_sparse_paged_attention rc=0 16 passed in 30.81s
+qsa_store_kv_cache_rows rc=0 4 passed in 3.25s
+qwen4_grouped_gemma_rmsnorm rc=0 7 passed in 3.32s
+qwen4_hc_combine_norm rc=0 7 passed in 7.95s
+qwen4_hc_gate_reduce rc=0 7 passed in 4.51s
+qwen4_hc_inject_combine rc=0 7 passed in 3.77s
+qwen4_hc_scale_silu rc=0 7 passed in 2.07s
+qwen4_qsa_all_blocks rc=0 3 passed in 1.68s
+qwen4_qsa_partial_rope rc=0 3 passed in 1.70s
+qwen4_qsa_topk rc=0 3 passed in 1.41s

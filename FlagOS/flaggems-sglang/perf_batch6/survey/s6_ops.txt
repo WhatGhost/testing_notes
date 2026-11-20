@@ -1,0 +1,15 @@
+ple_gate_norm
+ple_prefill_short_conv_
+ple_short_conv_
+qsa_compress_norm_mrope_store_groups
+qsa_mqa_paged
+qsa_sparse_paged_attention
+qsa_store_kv_cache_rows
+qwen4_grouped_gemma_rmsnorm
+qwen4_hc_combine_norm
+qwen4_hc_gate_reduce
+qwen4_hc_inject_combine
+qwen4_hc_scale_silu
+qwen4_qsa_all_blocks
+qwen4_qsa_partial_rope
+qwen4_qsa_topk

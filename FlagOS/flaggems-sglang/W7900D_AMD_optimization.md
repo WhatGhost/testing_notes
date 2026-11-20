@@ -271,7 +271,7 @@ rocprof 这条路走不通：这台机器上 GL2C（L2）计数器全部返回 0
 3. **正确性（接 SGLang）**：`chunk_gated_delta_rule_fwd`、`moe_align_block_size`、`fused_gate_sigmoid_mul_add`、`fused_qkvzba_split_reshape_cat` 已修好、暂存 fork 分支，等与 FlagOS 讨论放置位置和单测强度（详见「SGLang 接入正确性」）。
 4. **SGLang 路径上的下一步**：MoE 融合（#394）和 GDN decode 递推（#393）已做；剩 `decode_grouped_attention` 中等 batch、长上下文的 split-KV 配置（收益有限）。插件侧：要把 MoE 路由到 FlagGems-sglang 才能用上 #394（插件现在在 AMD 上跑 SGLang 自己的 Triton `fused_moe`），GemmaRMSNorm 改走算子库，两项都要另向插件仓库提 PR。
 5. **新算子摸底已完成（2026-11-18）**：第四段剩下的 4 个、batch11 的 18 个和 batch12 的 17 个，单测全部通过（FP8 类也能运行），大多已接近拷贝速度，见「新算子摸底：39 个（2026-11-18）」。其中有空间的 5 个已做完（11-19）：FP8 GEMM 两个一个 PR，`awq_gemm` 加 `mla_kv_pack_quantize_fp8` 一个 PR，描述已写好、未推送，等审阅；`triton_sparse_mla_fwd` 试了三种做法都没有收益，放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
-6. **下一步**：上游 master 11-19 前移到 `b85b585`，新增 15 个算子（qsa / qwen4 / ple 系列），待摸底。
+6. **新算子摸底（2026-11-20）**：上游 master 11-19 前移到 `b85b585`（#395），新增的 15 个 Qwen3.8 算子（HC / QSA / PLE 系列）单测全部通过；`qsa_sparse_paged_attention`（拷贝的 5.4–25 倍）和 `qwen4_qsa_topk`（PyTorch 回退，每次 19 个 kernel）空间最大，另有 4 个大形状上为拷贝的 2–6.6 倍。暂不动代码，见「新算子摸底：15 个（2026-11-20）」。
 
 ### 待办总览（2026-11-13，11-17 更新第一组，11-18 更新第三组）
 
@@ -290,7 +290,7 @@ rocprof 这条路走不通：这台机器上 GL2C（L2）计数器全部返回 0
 
 - 第四段（#279）6 个：`fused_moe`、`fused_recurrent_gated_delta_rule_packed_decode` 已随 #394 / #393 做完，其余 4 个 11-18 摸底，没有新目标。
 - 第六段（batch11，`5c2ed0f`）18 个和 batch12（#392）17 个：11-18 摸底，单测全部通过；FP8 GEMM `w8a8_block_fp8_matmul`、`triton_scaled_mm` 有约 4 倍 / 2 倍空间，`mla_kv_pack_quantize_fp8`、`triton_sparse_mla_fwd`、`awq_gemm` 有一些空间；另发现 33 个官方 benchmark 因 dict 输入跑不起来。见「新算子摸底：39 个（2026-11-18）」。11-19 做完：FP8 GEMM 1.00–5.16× / 1.00–2.82×，`awq_gemm` fp32 1.00–1.78×、fp16 / bf16 最多 33×，`mla_kv_pack_quantize_fp8` 最多 1.19×，两个 PR 待审；`triton_sparse_mla_fwd` 放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
-- 上游 `b85b585`（11-19）新增的 15 个（qsa / qwen4 / ple 系列）：未摸底。
+- 上游 `b85b585`（#395，11-19）新增的 15 个（HC / QSA / PLE 系列）：11-20 摸底，单测全部通过，8 个接近拷贝或只有小形状、1 个边缘、6 个有空间（`qsa_sparse_paged_attention`、`qwen4_qsa_topk` 最大），暂不做。见「新算子摸底：15 个（2026-11-20）」。
 - RTX 4090、R9700 上，最初 56 个之后新增的算子都没测。
 
 **三、SGLang 测试中暴露出来的**
@@ -621,6 +621,30 @@ SGLang 一侧：`ltx2_split_rotary`、`embedding_lora_a`、`apply_token_bitmask`
 - 扫配置时编译是瓶颈：大分块、fp32 的配置编译和运行都慢，先缩小配置空间，再把形状分到几张卡上跑（每个进程绑不同的 CPU 核）。
 
 数据和脚本在 `perf_batch5/`：`fp8_gemm/` 是原型（`n5_gemm_probe2.py`）、两个算子的检查 / 性能 / 配置脚本和日志（`n6_*`）、PR 描述（`pr_body_f8.md`、`pr_tables_f8.md`）和未推送的 rdna3 源码（`src/`）；`minor_ops/` 下是 `awq/`（`n9_*`：检查、性能、配置扫描及日志，bf16 舍入测试）、`mla_pack/`（`n7_*`）、`sparse_mla/`（三种做法的原型、扫描脚本和 `results.md`），以及 PR 描述（`pr_body_minor.md`）和未推送的 rdna3 源码（`src/`）。
+
+### 新算子摸底：15 个（2026-11-20）
+
+范围：上游 [#395](https://github.com/flagos-ai/FlagGems-sglang/pull/395)（11-19 合入，master 到 `b85b585`）新增的 15 个 Qwen3.8 算子：HC 系列 5 个（`qwen4_hc_*`、`qwen4_grouped_gemma_rmsnorm`）、QSA 系列 7 个（`qsa_*`、`qwen4_qsa_*`）、PLE 系列 3 个（`ple_*`）。都没有 rdna3 版本，走通用实现。
+
+单测 15 个全部通过（123 个用例）。口径同上一轮：官方 benchmark 的形状和输入，耗时 ÷ 搬运同样字节数的拷贝耗时（都用 `do_bench`）。这批 benchmark 把形状直接写在 `OpBenchmark(...)` 的参数里、模块级没有 `SHAPES`，摸底脚本改为从源码解析这两个参数；输入是元组，官方 harness 能跑（抽查 `qwen4_qsa_topk`、`qsa_sparse_paged_attention`，耗时与摸底一致）。
+
+| 分档 | 算子 |
+|---|---|
+| 接近拷贝（5） | `qsa_store_kv_cache_rows`（0.96–1.05）、`qwen4_grouped_gemma_rmsnorm`（0.95–1.10）、`qwen4_hc_scale_silu`（0.90–1.05）、`qsa_mqa_paged`（最大形状 1.10）、`ple_gate_norm`（最大形状 1.10） |
+| 只有小形状（3） | `qsa_compress_norm_mrope_store_groups`（10–16 µs）、`qwen4_qsa_all_blocks`、`qwen4_qsa_partial_rope`（约 9 µs） |
+| 边缘（1） | `qwen4_hc_combine_norm`（1024 / 16384 行 1.20 / 1.44） |
+| 有空间（6） | 见下 |
+
+| 算子 | 现状 | 耗时 ÷ 拷贝 | 原因（初判） |
+|---|---|---:|---|
+| `qsa_sparse_paged_attention` | (1, 512) 239 µs，(7, 2048) 931 µs，(64, 2048) 1686 µs | 5.4–25 | 不传 `split_workspace` 时走不切分的 kernel，网格为 (行数, KV 头数)，1 行时只有 1 个程序串行走完所有 key；非 NVIDIA 卡用保守的启动配置 (16, 4, 2)，每块 key 要经过逻辑下标、block table、K/V 三级间接读取。(64, 2048) 计算量约 0.4 GFLOP、K/V 共 134 MB，按带宽约 200 µs。通用文件里已有按 key 切分的版本，只在调用方传 workspace 时用 |
+| `qwen4_qsa_topk` | 1–64 行都要 120–160 µs | 13–17 | 通用实现是 PyTorch 回退（`torch.where`、`torch.topk` 等，每次 19 个 kernel）；输入只有 [64, 640] 个 fp32，每行在给定区间内取前 512 个。单测要求与参考实现逐位相同 |
+| `ple_prefill_short_conv_` | (4, 1024) 2367 µs | 2.5–6.6 | 未细查（每次 2 个 kernel） |
+| `ple_short_conv_` | 1024 行 1769 µs | 1.6–4.0 | 未细查；64 行起才明显 |
+| `qwen4_hc_inject_combine` | 16384 行 4643 µs | 3.3–3.9（1024 行起） | 未细查；64 行以内已到启动下限，只有 prefill 受益 |
+| `qwen4_hc_gate_reduce` | 16384 行 2726 µs | 2.0–2.3（1024 行起） | 同上 |
+
+暂不动代码。若要做，前两个收益最大：`qsa_sparse_paged_attention` 总是按 key 切分（没有 workspace 时自己分配）并按 gfx1100 调分块，预计 5–15 倍；`qwen4_qsa_topk` 改成一个 Triton kernel（值和下标打包成 64 位键排序，Triton 3.6 有 `tl.sort` / `tl.topk`），预计约 10 倍，并列值的顺序要与参考实现一致。数据和脚本在 `perf_batch6/survey/`（`s6_survey.py`、`s6_survey.json` / `.log`、`s6_ut.sh`、`s6_ut.summary`、`unit_tests/`）。
 
 ## 怎么判断
 
