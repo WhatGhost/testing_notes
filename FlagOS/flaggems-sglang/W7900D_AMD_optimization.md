@@ -270,7 +270,7 @@ rocprof 这条路走不通：这台机器上 GL2C（L2）计数器全部返回 0
 2. **第三轮分批已收尾**：第四批其余 9 个和补测的 `silu_and_mul_masked` 摸底后已接近拷贝速度或收益太小，不做；第一批的 2 个遗留等上游定单测口径。
 3. **正确性（接 SGLang）**：`chunk_gated_delta_rule_fwd`、`moe_align_block_size`、`fused_gate_sigmoid_mul_add`、`fused_qkvzba_split_reshape_cat` 已修好、暂存 fork 分支，等与 FlagOS 讨论放置位置和单测强度（详见「SGLang 接入正确性」）。
 4. **SGLang 路径上的下一步**：MoE 融合（#394）和 GDN decode 递推（#393）已做；剩 `decode_grouped_attention` 中等 batch、长上下文的 split-KV 配置（收益有限）。插件侧：要把 MoE 路由到 FlagGems-sglang 才能用上 #394（插件现在在 AMD 上跑 SGLang 自己的 Triton `fused_moe`），GemmaRMSNorm 改走算子库，两项都要另向插件仓库提 PR。
-5. **新算子摸底已完成（2026-11-18）**：第四段剩下的 4 个、batch11 的 18 个和 batch12 的 17 个，单测全部通过（FP8 类也能运行），大多已接近拷贝速度，见「新算子摸底：39 个（2026-11-18）」。其中有空间的 5 个已做完（11-19）：FP8 GEMM 两个一个 PR，`awq_gemm` 加 `mla_kv_pack_quantize_fp8` 一个 PR，描述已写好、未推送，等审阅；`triton_sparse_mla_fwd` 试了三种做法都没有收益，放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
+5. **新算子摸底已完成（2026-11-18）**：第四段剩下的 4 个、batch11 的 18 个和 batch12 的 17 个，单测全部通过（FP8 类也能运行），大多已接近拷贝速度，见「新算子摸底：39 个（2026-11-18）」。其中有空间的 5 个已做完（11-19）：FP8 GEMM 两个为 [#415](https://github.com/flagos-ai/FlagGems-sglang/pull/415)，`awq_gemm` 加 `mla_kv_pack_quantize_fp8` 为 [#416](https://github.com/flagos-ai/FlagGems-sglang/pull/416)（11-20 提交，在审）；`triton_sparse_mla_fwd` 试了三种做法都没有收益，放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
 6. **新算子摸底（2026-11-20）**：上游 master 11-19 前移到 `b85b585`（#395），新增的 15 个 Qwen3.8 算子（HC / QSA / PLE 系列）单测全部通过；`qsa_sparse_paged_attention`（拷贝的 5.4–25 倍）和 `qwen4_qsa_topk`（PyTorch 回退，每次 19 个 kernel）空间最大，另有 4 个大形状上为拷贝的 2–6.6 倍。暂不动代码，见「新算子摸底：15 个（2026-11-20）」。
 
 ### 待办总览（2026-11-13，11-17 更新第一组，11-18 更新第三组）
@@ -289,7 +289,7 @@ rocprof 这条路走不通：这台机器上 GL2C（L2）计数器全部返回 0
 **二、官方库新增、W7900D 上还没按第三轮口径 benchmark 的：原有 24 个，11-18 连同 batch12 的 17 个已全部摸底**
 
 - 第四段（#279）6 个：`fused_moe`、`fused_recurrent_gated_delta_rule_packed_decode` 已随 #394 / #393 做完，其余 4 个 11-18 摸底，没有新目标。
-- 第六段（batch11，`5c2ed0f`）18 个和 batch12（#392）17 个：11-18 摸底，单测全部通过；FP8 GEMM `w8a8_block_fp8_matmul`、`triton_scaled_mm` 有约 4 倍 / 2 倍空间，`mla_kv_pack_quantize_fp8`、`triton_sparse_mla_fwd`、`awq_gemm` 有一些空间；另发现 33 个官方 benchmark 因 dict 输入跑不起来。见「新算子摸底：39 个（2026-11-18）」。11-19 做完：FP8 GEMM 1.00–5.16× / 1.00–2.82×，`awq_gemm` fp32 1.00–1.78×、fp16 / bf16 最多 33×，`mla_kv_pack_quantize_fp8` 最多 1.19×，两个 PR 待审；`triton_sparse_mla_fwd` 放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
+- 第六段（batch11，`5c2ed0f`）18 个和 batch12（#392）17 个：11-18 摸底，单测全部通过；FP8 GEMM `w8a8_block_fp8_matmul`、`triton_scaled_mm` 有约 4 倍 / 2 倍空间，`mla_kv_pack_quantize_fp8`、`triton_sparse_mla_fwd`、`awq_gemm` 有一些空间；另发现 33 个官方 benchmark 因 dict 输入跑不起来。见「新算子摸底：39 个（2026-11-18）」。11-19 做完：FP8 GEMM 1.00–5.16× / 1.00–2.82×，`awq_gemm` fp32 1.00–1.78×、fp16 / bf16 最多 33×，`mla_kv_pack_quantize_fp8` 最多 1.19×，已提 #415、#416（在审）；`triton_sparse_mla_fwd` 放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
 - 上游 `b85b585`（#395，11-19）新增的 15 个（HC / QSA / PLE 系列）：11-20 摸底，单测全部通过，8 个接近拷贝或只有小形状、1 个边缘、6 个有空间（`qsa_sparse_paged_attention`、`qwen4_qsa_topk` 最大），暂不做。见「新算子摸底：15 个（2026-11-20）」。
 - RTX 4090、R9700 上，最初 56 个之后新增的算子都没测。
 
@@ -591,7 +591,7 @@ SGLang 一侧：`ltx2_split_rotary`、`embedding_lora_a`、`apply_token_bitmask`
 
 ### FP8 GEMM 与三个小项（2026-11-19）
 
-接上一节：FP8 GEMM 两个（`w8a8_block_fp8_matmul`、`triton_scaled_mm`）和三个小项（`awq_gemm`、`mla_kv_pack_quantize_fp8`、`triton_sparse_mla_fwd`）。代码基于上游 `87e9acc`（#393、#394 合入后），只在 `_amd/rdna3/ops/` 下加新文件。这几个算子的官方 benchmark 都跑不起来（dict 输入，见上一节），性能用官方的形状和输入、`do_bench`，master 与新实现在同一进程内交替 3 轮（`mla_kv_pack_quantize_fp8` 7 轮）取中位数。两个 PR 的描述都已写好、未推送，等审阅：FP8 GEMM 一个，`awq_gemm` 加 `mla_kv_pack_quantize_fp8` 一个；`triton_sparse_mla_fwd` 放弃。上游 master 11-19 前移到 `b85b585`，只新增 15 个算子的文件，不涉及这几个算子，数据照用。
+接上一节：FP8 GEMM 两个（`w8a8_block_fp8_matmul`、`triton_scaled_mm`）和三个小项（`awq_gemm`、`mla_kv_pack_quantize_fp8`、`triton_sparse_mla_fwd`）。代码基于上游 `87e9acc`（#393、#394 合入后），只在 `_amd/rdna3/ops/` 下加新文件。这几个算子的官方 benchmark 都跑不起来（dict 输入，见上一节），性能用官方的形状和输入、`do_bench`，master 与新实现在同一进程内交替 3 轮（`mla_kv_pack_quantize_fp8` 7 轮）取中位数。11-20 提交为 [#415](https://github.com/flagos-ai/FlagGems-sglang/pull/415)（FP8 GEMM）和 [#416](https://github.com/flagos-ai/FlagGems-sglang/pull/416)（`awq_gemm` 加 `mla_kv_pack_quantize_fp8`），各一个提交、基于上游 `b85b585`，CI 的代码风格和 CLA 通过，在审；`triton_sparse_mla_fwd` 放弃。上游 master 11-19 前移到 `b85b585`，只新增 15 个算子的文件，不涉及这几个算子，数据照用。
 
 **FP8 GEMM**
 
@@ -620,7 +620,7 @@ SGLang 一侧：`ltx2_split_rotary`、`embedding_lora_a`、`apply_token_bitmask`
 - `do_bench` 每次计时前清缓存（往 256 MB 写零，约 350 µs），这段时间里 CPU 早已把被测函数的所有启动排进队列，所以测到的是 GPU 时间、不含 Python 侧的启动开销；小形状 9–20 µs 的耗时主要是 GPU 侧的启动延迟。
 - 扫配置时编译是瓶颈：大分块、fp32 的配置编译和运行都慢，先缩小配置空间，再把形状分到几张卡上跑（每个进程绑不同的 CPU 核）。
 
-数据和脚本在 `perf_batch5/`：`fp8_gemm/` 是原型（`n5_gemm_probe2.py`）、两个算子的检查 / 性能 / 配置脚本和日志（`n6_*`）、PR 描述（`pr_body_f8.md`、`pr_tables_f8.md`）和未推送的 rdna3 源码（`src/`）；`minor_ops/` 下是 `awq/`（`n9_*`：检查、性能、配置扫描及日志，bf16 舍入测试）、`mla_pack/`（`n7_*`）、`sparse_mla/`（三种做法的原型、扫描脚本和 `results.md`），以及 PR 描述（`pr_body_minor.md`）和未推送的 rdna3 源码（`src/`）。
+数据和脚本在 `perf_batch5/`：`fp8_gemm/` 是原型（`n5_gemm_probe2.py`）、两个算子的检查 / 性能 / 配置脚本和日志（`n6_*`）、PR 描述（`pr_body_f8.md`、`pr_tables_f8.md`）和 rdna3 源码（`src/`，与 #415 相同）；`minor_ops/` 下是 `awq/`（`n9_*`：检查、性能、配置扫描及日志，bf16 舍入测试）、`mla_pack/`（`n7_*`）、`sparse_mla/`（三种做法的原型、扫描脚本和 `results.md`），以及 PR 描述（`pr_body_minor.md`）和 rdna3 源码（`src/`，与 #416 相同）。
 
 ### 新算子摸底：15 个（2026-11-20）
 

@@ -384,7 +384,7 @@ W7900D 上单测 161 passed；按第三轮口径摸底后：**6 个已接近拷�
 
 ### 状态
 
-W7900D 上 2026-11-18 摸底：单测 18 个全部通过（FP8 / MXFP8 / FP4 / AWQ 类也能运行）；按第三轮口径大多已接近拷贝速度，FP8 GEMM `w8a8_block_fp8_matmul`（15.7 TFLOPs）、`triton_scaled_mm`（31.8 TFLOPs）明显慢于同形状的 `mxfp8_block_scaled_matmul`（63.5 TFLOPs）；其中 16 个的官方 benchmark 因 dict 输入在官方 harness 里跑不起来。详见 `W7900D_AMD_optimization.md`「新算子摸底：39 个（2026-11-18）」。RTX 4090 / R9700 未测。11-19 已做 rdna3 版、PR 待审：`w8a8_block_fp8_matmul` 1.00–5.16×、`triton_scaled_mm` 1.00–2.82×、`awq_gemm`（fp32 1.00–1.78×，fp16 / bf16 最多 33×）；见「FP8 GEMM 与三个小项（2026-11-19）」。
+W7900D 上 2026-11-18 摸底：单测 18 个全部通过（FP8 / MXFP8 / FP4 / AWQ 类也能运行）；按第三轮口径大多已接近拷贝速度，FP8 GEMM `w8a8_block_fp8_matmul`（15.7 TFLOPs）、`triton_scaled_mm`（31.8 TFLOPs）明显慢于同形状的 `mxfp8_block_scaled_matmul`（63.5 TFLOPs）；其中 16 个的官方 benchmark 因 dict 输入在官方 harness 里跑不起来。详见 `W7900D_AMD_optimization.md`「新算子摸底：39 个（2026-11-18）」。RTX 4090 / R9700 未测。11-19 已做 rdna3 版，11-20 提为 #415 / #416（在审）：`w8a8_block_fp8_matmul` 1.00–5.16×、`triton_scaled_mm` 1.00–2.82×、`awq_gemm`（fp32 1.00–1.78×，fp16 / bf16 最多 33×）；见「FP8 GEMM 与三个小项（2026-11-19）」。
 
 ## 5c2ed0f → 567d379：新增 17 个（batch12）
 
@@ -424,7 +424,7 @@ W7900D 上 2026-11-18 摸底：单测 18 个全部通过（FP8 / MXFP8 / FP4 / A
 
 ### 状态
 
-W7900D 上 2026-11-18 摸底：单测 17 个全部通过；大多已接近拷贝速度，`per_tensor_quant_mla_fp8`、`mla_kv_pack_quantize_fp8` 最大形状为拷贝的 1.38 / 1.36 倍（前者要读两遍输入），`triton_sparse_mla_fwd` 23.5 TFLOPs、`absorbed_bmm_concat_cast_q_fp8` 18–45 TFLOPs；17 个的官方 benchmark 都因 dict 输入在官方 harness 里跑不起来。详见 `W7900D_AMD_optimization.md`「新算子摸底：39 个（2026-11-18）」。RTX 4090 / R9700 未测。11-19：`mla_kv_pack_quantize_fp8` 已做 rdna3 版、PR 待审（16 个头、512 个 token 起 1.16–1.19×，其余持平）；`triton_sparse_mla_fwd` 试了三种做法都没有收益，放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
+W7900D 上 2026-11-18 摸底：单测 17 个全部通过；大多已接近拷贝速度，`per_tensor_quant_mla_fp8`、`mla_kv_pack_quantize_fp8` 最大形状为拷贝的 1.38 / 1.36 倍（前者要读两遍输入），`triton_sparse_mla_fwd` 23.5 TFLOPs、`absorbed_bmm_concat_cast_q_fp8` 18–45 TFLOPs；17 个的官方 benchmark 都因 dict 输入在官方 harness 里跑不起来。详见 `W7900D_AMD_optimization.md`「新算子摸底：39 个（2026-11-18）」。RTX 4090 / R9700 未测。11-19：`mla_kv_pack_quantize_fp8` 已做 rdna3 版，11-20 提为 #416（在审；16 个头、512 个 token 起 1.16–1.19×，其余持平）；`triton_sparse_mla_fwd` 试了三种做法都没有收益，放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
 
 ## 567d379 → b85b585：新增 15 个（#395）
 
