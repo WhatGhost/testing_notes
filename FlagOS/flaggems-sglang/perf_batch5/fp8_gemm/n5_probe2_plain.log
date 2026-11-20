@@ -1,0 +1,9 @@
+M=4096 N=7168 K=4096 hipBLASLt bf16:   3481.9 us  69.1 TFLOPs
+  plain pad_a= 0 pad_b= 0 BM=128 BN=128 BK=64 warps=4 stages=2:   3114.7 us  77.2 TFLOPs
+  plain pad_a= 0 pad_b= 0 BM=128 BN=128 BK=32 warps=4 stages=1:   3168.7 us  75.9 TFLOPs
+  plain pad_a= 0 pad_b= 0 BM=128 BN=128 BK=32 warps=4 stages=2:   3181.5 us  75.6 TFLOPs
+  plain pad_a= 0 pad_b= 0 BM=128 BN=128 BK=32 warps=4 stages=3:   3196.6 us  75.2 TFLOPs
+  plain pad_a= 0 pad_b=32 BM=128 BN=128 BK=64 warps=4 stages=2:   3204.9 us  75.0 TFLOPs
+  plain pad_a= 0 pad_b= 0 BM=128 BN=128 BK=32 warps=8 stages=1:   3231.7 us  74.4 TFLOPs
+  plain pad_a=32 pad_b=32 BM=128 BN=128 BK=32 warps=4 stages=3:   3240.5 us  74.2 TFLOPs
+  plain pad_a=32 pad_b= 0 BM=128 BN=128 BK=32 warps=8 stages=1:   3240.8 us  74.2 TFLOPs

@@ -1,0 +1,2 @@
+M=  8 N=4096: generic   195.7 us | small best    74.2 us (no widen) weight  226 GB/s cfg (BN,BK,warps,stages,split)=(256, 64, 4, 1, 8) speedup 2.64x | diff 3.8e-06 | next (128, 64, 4, 1, 8):74.4 (256, 64, 8, 1, 8):85.6 (128, 64, 4, 2, 8):86.1
+M= 64 N=4096: generic   129.4 us | small best   156.4 us (no widen) weight  107 GB/s cfg (BN,BK,warps,stages,split)=(64, 64, 4, 1, 8) speedup 0.83x | diff 7.6e-06 | next (128, 64, 8, 1, 8):167.4 (64, 64, 4, 1, 4):173.1 (64, 64, 4, 2, 8):174.7

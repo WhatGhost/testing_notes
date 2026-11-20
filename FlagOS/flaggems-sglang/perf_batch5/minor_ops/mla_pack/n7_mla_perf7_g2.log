@@ -1,0 +1,13 @@
+official s=    1 h= 1: master      9.4 us  new      9.2 us   1.02x
+official s=    1 h=16: master      9.5 us  new      9.5 us   1.00x
+official s=    8 h= 1: master      9.2 us  new      9.2 us   1.00x
+official s=    8 h=16: master     10.0 us  new     10.1 us   0.99x
+official s=   64 h= 1: master      9.4 us  new      9.4 us   1.00x
+official s=   64 h=16: master     15.8 us  new     15.8 us   1.00x
+official s=  512 h= 1: master     11.8 us  new     11.9 us   1.00x
+official s=  512 h=16: master     83.0 us  new     71.5 us   1.16x
+official s= 4096 h= 1: master     38.5 us  new     38.7 us   0.99x
+official s= 4096 h=16: master    558.8 us  new    467.0 us   1.20x
+official s=    7 h= 8: master      9.8 us  new      9.7 us   1.01x
+official s=  333 h= 1: master     10.8 us  new     10.8 us   1.00x
+official s=  256 h= 8: master     21.9 us  new     21.0 us   1.04x

@@ -1,0 +1,11 @@
+  halves pad=32 BM=128 BN=128 BK=32 warps=8 stages=2:   3366.5 us  71.4 TFLOPs
+  halves pad= 0 BM=64 BN=128 BK=64 warps=8 stages=2:   3408.2 us  70.6 TFLOPs
+  halves pad=32 BM=128 BN=128 BK=64 warps=8 stages=2:   3423.5 us  70.3 TFLOPs
+  halves pad=32 BM=64 BN=128 BK=64 warps=8 stages=2:   3481.1 us  69.1 TFLOPs
+  halves pad= 0 BM=128 BN=128 BK=64 warps=8 stages=2:   3505.7 us  68.6 TFLOPs
+  halves pad= 0 BM=128 BN=128 BK=32 warps=8 stages=2:   3539.0 us  68.0 TFLOPs
+  halves pad=32 BM=128 BN=128 BK=128 warps=8 stages=2:   3666.3 us  65.6 TFLOPs
+  halves pad=32 BM=64 BN=128 BK=32 warps=8 stages=2:   3692.8 us  65.1 TFLOPs
+  halves pad=32 BM=64 BN=128 BK=128 warps=8 stages=2:   3706.3 us  64.9 TFLOPs
+  halves pad= 0 BM=128 BN=128 BK=128 warps=8 stages=2:   3763.2 us  63.9 TFLOPs
+best config fp32 output: max relative error vs fp64 reference 1.87e-01

@@ -1,0 +1,61 @@
+ok   float32  m=  16 k=  128 n=   32 gs= 128 pad= 0 | new 9.8e-07 gen 8.9e-08 ref 3.8e-07
+ok   float32  m=  24 k=  128 n=   64 gs=  32 pad= 0 | new 3.2e-07 gen 1.0e-07 ref 3.1e-07
+ok   float32  m=  32 k=  128 n=  128 gs=  -1 pad= 0 | new 1.1e-06 gen 9.8e-08 ref 4.6e-07
+ok   float32  m=   1 k= 4096 n= 1024 gs= 128 pad= 0 | new 1.9e-07 gen 1.2e-07 ref 1.5e-06
+ok   float32  m=   1 k= 4096 n= 4096 gs= 128 pad= 0 | new 1.7e-07 gen 8.9e-08 ref 1.9e-06
+ok   float32  m=   8 k= 4096 n= 1024 gs= 128 pad= 0 | new 6.0e-07 gen 1.1e-07 ref 2.4e-06
+ok   float32  m=   8 k= 4096 n= 4096 gs= 128 pad= 0 | new 5.9e-07 gen 1.3e-07 ref 2.7e-06
+ok   float32  m=  64 k= 4096 n= 1024 gs= 128 pad= 0 | new 5.9e-07 gen 3.9e-07 ref 2.9e-06
+ok   float32  m=  64 k= 4096 n= 4096 gs= 128 pad= 0 | new 5.8e-07 gen 4.0e-07 ref 3.6e-06
+ok   float32  m= 512 k= 4096 n= 1024 gs= 128 pad= 0 | new 6.1e-07 gen 4.3e-07 ref 3.2e-06
+ok   float32  m= 512 k= 4096 n= 4096 gs= 128 pad= 0 | new 6.0e-07 gen 4.1e-07 ref 3.7e-06
+ok   float32  m=  16 k= 4096 n=   32 gs= 128 pad= 0 | new 9.1e-07 gen 9.8e-08 ref 2.2e-06
+ok   float32  m=  24 k= 4096 n=   64 gs= 128 pad= 0 | new 7.5e-07 gen 1.2e-07 ref 3.0e-06
+ok   float32  m=  32 k= 4096 n=  128 gs= 128 pad= 0 | new 6.9e-07 gen 9.5e-08 ref 2.2e-06
+ok   float32  m=   3 k=  512 n=   40 gs=  64 pad= 0 | new 4.2e-07 gen 1.0e-07 ref 6.7e-07
+ok   float32  m=  17 k= 1024 n=   96 gs=  32 pad= 0 | new 3.0e-07 gen 1.2e-07 ref 9.2e-07
+ok   float32  m= 100 k= 2048 n=  200 gs= 128 pad= 0 | new 7.2e-07 gen 1.1e-07 ref 2.0e-06
+ok   float32  m= 130 k=  768 n=  264 gs= 256 pad= 0 | new 1.0e-06 gen 1.2e-07 ref 1.3e-06
+ok   float32  m=   5 k= 4096 n= 1024 gs= 128 pad=64 | new 6.5e-07 gen 8.1e-08 ref 2.7e-06
+ok   float32  m=  64 k= 4096 n= 4096 gs= 128 pad=32 | new 6.2e-07 gen 4.2e-07 ref 3.2e-06
+ok   float16  m=  16 k=  128 n=   32 gs= 128 pad= 0 | new 3.2e-04 gen 3.6e-04 ref 3.2e-04
+ok   float16  m=  24 k=  128 n=   64 gs=  32 pad= 0 | new 2.5e-04 gen 3.0e-04 ref 2.5e-04
+ok   float16  m=  32 k=  128 n=  128 gs=  -1 pad= 0 | new 4.4e-04 gen 4.4e-04 ref 4.4e-04
+ok   float16  m=   1 k= 4096 n= 1024 gs= 128 pad= 0 | new 3.1e-04 gen 3.5e-04 ref 3.1e-04
+ok   float16  m=   1 k= 4096 n= 4096 gs= 128 pad= 0 | new 2.9e-04 gen 3.1e-04 ref 2.9e-04
+ok   float16  m=   8 k= 4096 n= 1024 gs= 128 pad= 0 | new 3.0e-04 gen 3.4e-04 ref 3.0e-04
+ok   float16  m=   8 k= 4096 n= 4096 gs= 128 pad= 0 | new 2.9e-04 gen 3.4e-04 ref 3.0e-04
+ok   float16  m=  64 k= 4096 n= 1024 gs= 128 pad= 0 | new 3.0e-04 gen 3.5e-04 ref 3.0e-04
+ok   float16  m=  64 k= 4096 n= 4096 gs= 128 pad= 0 | new 2.9e-04 gen 3.4e-04 ref 2.9e-04
+ok   float16  m= 512 k= 4096 n= 1024 gs= 128 pad= 0 | new 2.7e-04 gen 3.2e-04 ref 2.7e-04
+ok   float16  m= 512 k= 4096 n= 4096 gs= 128 pad= 0 | new 2.6e-04 gen 3.1e-04 ref 2.7e-04
+ok   float16  m=  16 k= 4096 n=   32 gs= 128 pad= 0 | new 2.7e-04 gen 3.0e-04 ref 2.7e-04
+ok   float16  m=  24 k= 4096 n=   64 gs= 128 pad= 0 | new 2.7e-04 gen 3.2e-04 ref 2.7e-04
+ok   float16  m=  32 k= 4096 n=  128 gs= 128 pad= 0 | new 3.5e-04 gen 3.8e-04 ref 3.5e-04
+ok   float16  m=   3 k=  512 n=   40 gs=  64 pad= 0 | new 2.5e-04 gen 2.7e-04 ref 2.5e-04
+ok   float16  m=  17 k= 1024 n=   96 gs=  32 pad= 0 | new 3.2e-04 gen 3.3e-04 ref 3.2e-04
+ok   float16  m= 100 k= 2048 n=  200 gs= 128 pad= 0 | new 4.4e-04 gen 4.4e-04 ref 4.4e-04
+ok   float16  m= 130 k=  768 n=  264 gs= 256 pad= 0 | new 2.8e-04 gen 3.9e-04 ref 2.8e-04
+ok   float16  m=   5 k= 4096 n= 1024 gs= 128 pad=64 | new 3.1e-04 gen 3.5e-04 ref 3.1e-04
+ok   float16  m=  64 k= 4096 n= 4096 gs= 128 pad=32 | new 2.8e-04 gen 3.4e-04 ref 2.9e-04
+ok   bfloat16 m=  16 k=  128 n=   32 gs= 128 pad= 0 | new 2.5e-03 gen 3.0e-03 ref 2.5e-03
+ok   bfloat16 m=  24 k=  128 n=   64 gs=  32 pad= 0 | new 2.0e-03 gen 2.3e-03 ref 2.0e-03
+ok   bfloat16 m=  32 k=  128 n=  128 gs=  -1 pad= 0 | new 3.6e-03 gen 3.9e-03 ref 3.6e-03
+ok   bfloat16 m=   1 k= 4096 n= 1024 gs= 128 pad= 0 | new 2.4e-03 gen 2.6e-03 ref 2.4e-03
+ok   bfloat16 m=   1 k= 4096 n= 4096 gs= 128 pad= 0 | new 2.3e-03 gen 2.5e-03 ref 2.4e-03
+ok   bfloat16 m=   8 k= 4096 n= 1024 gs= 128 pad= 0 | new 2.4e-03 gen 2.7e-03 ref 2.4e-03
+ok   bfloat16 m=   8 k= 4096 n= 4096 gs= 128 pad= 0 | new 2.3e-03 gen 2.6e-03 ref 2.3e-03
+ok   bfloat16 m=  64 k= 4096 n= 1024 gs= 128 pad= 0 | new 2.4e-03 gen 2.6e-03 ref 2.4e-03
+ok   bfloat16 m=  64 k= 4096 n= 4096 gs= 128 pad= 0 | new 2.3e-03 gen 2.6e-03 ref 2.3e-03
+ok   bfloat16 m= 512 k= 4096 n= 1024 gs= 128 pad= 0 | new 2.1e-03 gen 2.6e-03 ref 2.1e-03
+ok   bfloat16 m= 512 k= 4096 n= 4096 gs= 128 pad= 0 | new 2.0e-03 gen 2.5e-03 ref 2.0e-03
+ok   bfloat16 m=  16 k= 4096 n=   32 gs= 128 pad= 0 | new 2.1e-03 gen 2.2e-03 ref 2.1e-03
+ok   bfloat16 m=  24 k= 4096 n=   64 gs= 128 pad= 0 | new 2.1e-03 gen 2.7e-03 ref 2.1e-03
+ok   bfloat16 m=  32 k= 4096 n=  128 gs= 128 pad= 0 | new 2.8e-03 gen 3.2e-03 ref 2.8e-03
+ok   bfloat16 m=   3 k=  512 n=   40 gs=  64 pad= 0 | new 2.0e-03 gen 2.2e-03 ref 2.0e-03
+ok   bfloat16 m=  17 k= 1024 n=   96 gs=  32 pad= 0 | new 2.5e-03 gen 2.6e-03 ref 2.5e-03
+ok   bfloat16 m= 100 k= 2048 n=  200 gs= 128 pad= 0 | new 2.3e-03 gen 2.3e-03 ref 2.3e-03
+ok   bfloat16 m= 130 k=  768 n=  264 gs= 256 pad= 0 | new 2.2e-03 gen 3.0e-03 ref 2.2e-03
+ok   bfloat16 m=   5 k= 4096 n= 1024 gs= 128 pad=64 | new 2.5e-03 gen 2.7e-03 ref 2.5e-03
+ok   bfloat16 m=  64 k= 4096 n= 4096 gs= 128 pad=32 | new 2.3e-03 gen 2.6e-03 ref 2.3e-03
+60/60 ok; worst new error {'float32': 1.1090806188244213e-06, 'float16': 0.0004439782258928901, 'bfloat16': 0.003564917873000832}

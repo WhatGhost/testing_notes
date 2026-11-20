@@ -1,0 +1,2 @@
+M=   1 N=7168: generic    257.6 us | swap best    165.8 us weight  177 GB/s cfg (A_fp8,BM,BN,BK,warps,stages,split)=(0, 16, 32, 128, 4, 2, 2) speedup 1.55x | max diff/max|ref| 0.0e+00 | next (0, 16, 32, 128, 8, 2, 2):167.9 (0, 16, 32, 128, 4, 2, 1):188.6
+M=   8 N=7168: generic    302.1 us | swap best    168.8 us weight  174 GB/s cfg (A_fp8,BM,BN,BK,warps,stages,split)=(0, 16, 32, 128, 4, 2, 2) speedup 1.79x | max diff/max|ref| 2.0e-04 | next (0, 16, 32, 128, 8, 2, 2):175.0 (0, 16, 64, 128, 4, 2, 2):187.4

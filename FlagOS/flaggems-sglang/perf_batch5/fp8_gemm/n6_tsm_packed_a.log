@@ -1,0 +1,3 @@
+M=   8 N=4096: generic    195.4 us | packed best     62.6 us (+widen A  10.8)   4.3 TF, weight  268 GB/s, cfg (BM,BN,BK,warps,stages,split)=(16, 64, 128, 4, 2, 4) | speedup 2.66x | max diff vs generic 9.54e-07
+M=  64 N=4096: generic    132.4 us | packed best     92.6 us (+widen A  11.7)  23.2 TF, weight  181 GB/s, cfg (BM,BN,BK,warps,stages,split)=(64, 64, 64, 8, 2, 2) | speedup 1.27x | max diff vs generic 7.63e-06
+M= 512 N=4096: generic    534.4 us | packed best    392.9 us (+widen A  30.2)  43.7 TF, weight   43 GB/s, cfg (BM,BN,BK,warps,stages,split)=(128, 64, 64, 4, 1, 1) | speedup 1.26x | max diff vs generic 9.54e-07
