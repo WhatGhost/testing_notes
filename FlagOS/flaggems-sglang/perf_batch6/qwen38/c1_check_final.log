@@ -1,0 +1,25 @@
+ok   decode bench rows=1
+ok   decode bench rows=7
+ok   decode bench rows=64
+ok   decode bench rows=1024
+ok   decode zeros/-0.0
+ok   decode fp16
+ok   decode fp32
+ok   decode bf16 x, fp32 state
+ok   decode has_initial mixed
+ok   decode null / out-of-range rows
+ok   decode permuted rows
+ok   decode strided x / out
+ok   decode extra capacity
+ok   decode odd channels
+ok   decode width=2 dilation=1
+ok   decode width=3 dilation=2
+ok   decode width=8 dilation=1
+ok   decode width=5 dilation=3
+ok   ragged
+ok   profiling
+20/20 bitwise identical (output and state)
+decode rows=    1: generic     15.2 us  new     10.5 us   1.45x
+decode rows=    7: generic     20.3 us  new     15.1 us   1.34x
+decode rows=   64: generic     85.0 us  new     56.5 us   1.50x
+decode rows= 1024: generic   1769.0 us  new    652.9 us   2.71x

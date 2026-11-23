@@ -1,0 +1,10 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: ple_prefill_short_conv_  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.173621                 N/A          ([torch.Size([1024, 10240]), torch.Size([1024, 10240]), torch.Size([1, 10240, 9]), torch.Size([10240, 4]), torch.Size([2]), torch.Size([1]), torch.Size([1])], {'num_prefills': 1, 'max_len': 1024, 'state_len': 9, 'kernel_width': 4, 'dilation': 3, 'null_block_id': -1})
+SUCCESS                    N/A            1.320067                 N/A          ([torch.Size([4096, 10240]), torch.Size([4096, 10240]), torch.Size([4, 10240, 9]), torch.Size([10240, 4]), torch.Size([5]), torch.Size([4]), torch.Size([4])], {'num_prefills': 4, 'max_len': 1024, 'state_len': 9, 'kernel_width': 4, 'dilation': 3, 'null_block_id': -1})
+
+.
+1 passed in 1.24s

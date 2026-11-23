@@ -1,8 +1,8 @@
 # FlagGems-sglang 新增算子（b7a575a → 5c2ed0f）
 
-本目录 RTX 4090、W7900D、R9700 的测试都基于 flagos-ai/FlagGems-sglang 的 b7a575a，当时仓库注册了 56 个算子。到 9580d88 新增了 32 个（2026-10-21 记录），到 2aaa9b0 又新增 36 个（2026-10-29 记录），到 7e9943f 再新增 17 个（2026-11-02 记录），到 dcb71aa 又新增 6 个（2026-11-05 记录），到 1bb7755 再新增 16 个实现（2026-11-10 记录），到 5c2ed0f 再新增 18 个实现（2026-11-13 记录，含此前只有 reference/单测的 `silu_and_mul_routed`），到 567d379 再新增 17 个实现（batch12，2026-11-18 记录），到 b85b585 再新增 15 个（#395，2026-11-20 记录），`ops/` 共 213 个，其间没有删除或改名的算子。各段分开记录，这份清单记录的是还没有在各张卡上测完的算子，某个算子在所有卡上都测过之后就可以从这里去掉。
+本目录 RTX 4090、W7900D、R9700 的测试都基于 flagos-ai/FlagGems-sglang 的 b7a575a，当时仓库注册了 56 个算子。到 9580d88 新增了 32 个（2026-10-21 记录），到 2aaa9b0 又新增 36 个（2026-10-29 记录），到 7e9943f 再新增 17 个（2026-11-02 记录），到 dcb71aa 又新增 6 个（2026-11-05 记录），到 1bb7755 再新增 16 个实现（2026-11-10 记录），到 5c2ed0f 再新增 18 个实现（2026-11-13 记录，含此前只有 reference/单测的 `silu_and_mul_routed`），到 567d379 再新增 17 个实现（batch12，2026-11-18 记录），到 b85b585 再新增 15 个（#395，2026-11-20 记录），到 2667764 再新增 17 个（batch13，#418，2026-11-23 记录），`ops/` 共 230 个，其间没有删除或改名的算子。各段分开记录，这份清单记录的是还没有在各张卡上测完的算子，某个算子在所有卡上都测过之后就可以从这里去掉。
 
-## 测试覆盖（2026-11-20）
+## 测试覆盖（2026-11-23）
 
 | | RTX 4090 | W7900D | R9700 |
 |---|---|---|---|
@@ -15,9 +15,10 @@
 | 第六段新增 18 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第七段新增 17 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第八段新增 15 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
+| 第九段新增 17 个 | 未测 | 未测 | 未测 |
 
 - 三张卡的报告（`RTX4090_report.md`、`W7900D_report.md`、`R9700_report.md`）都停在 b7a575a 的 56 个算子，这些新增算子**在 RTX 4090 和 R9700 上一个都没有测过**，所以目前没有可以从这份清单里去掉的算子。
-- W7900D 上前三段的 85 个全部测了耗时，也都跑了单测。第三段的 17 个原来没有参考实现和单测，后来由 batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上，单测全部通过。第一段的 `residual_gate_add` 与 `silu_and_mul_masked` 等正确性修复已合入 [#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) / [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290)。第四段的 6 个单测全部通过，其中 `fused_moe`、`fused_recurrent_gated_delta_rule_packed_decode` 已随 #394 / #393 优化，其余 4 个在 2026-11-18 计时摸底。第五段 16 个单测 161 passed，并已按第三轮口径计时摸底。第六段 18 个（batch11）和第七段 17 个（batch12）在 2026-11-18 摸底：单测全部通过（FP8 类也能在 gfx1100 上运行），大多已接近拷贝速度。第八段 15 个（#395）在 2026-11-20 摸底：单测全部通过，8 个接近拷贝或只有小形状，6 个有空间。
+- W7900D 上前三段的 85 个全部测了耗时，也都跑了单测。第三段的 17 个原来没有参考实现和单测，后来由 batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上，单测全部通过。第一段的 `residual_gate_add` 与 `silu_and_mul_masked` 等正确性修复已合入 [#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) / [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290)。第四段的 6 个单测全部通过，其中 `fused_moe`、`fused_recurrent_gated_delta_rule_packed_decode` 已随 #394 / #393 优化，其余 4 个在 2026-11-18 计时摸底。第五段 16 个单测 161 passed，并已按第三轮口径计时摸底。第六段 18 个（batch11）和第七段 17 个（batch12）在 2026-11-18 摸底：单测全部通过（FP8 类也能在 gfx1100 上运行），大多已接近拷贝速度。第八段 15 个（#395）在 2026-11-20 摸底：单测全部通过，8 个接近拷贝或只有小形状，6 个有空间，这 6 个已做 rdna3 版（#421，在审）。第九段 17 个（batch13）尚未摸底。
 - W7900D 上做的是摸底，不是三份报告那种正式测试：用的是 benchmark 自己的形状和 `do_bench`，没有跑官方 benchmark 的全量形状，也没有做多轮稳定性复测。要把某一段标成「已测」并从清单里去掉，应当按三份报告的口径重跑。
 - 逐算子数据和在 W7900D 上的优化分批见 `W7900D_AMD_optimization.md` 的「第三轮」「batch10 摸底」「SGLang 接入正确性」。
 
@@ -461,7 +462,46 @@ W7900D 上 2026-11-18 摸底：单测 17 个全部通过；大多已接近拷贝
 
 ### 状态
 
-W7900D 上 2026-11-20 摸底：单测 15 个全部通过（123 个用例）；8 个接近拷贝或只有小形状，`qwen4_hc_combine_norm` 边缘；`qsa_sparse_paged_attention`（拷贝的 5.4–25 倍，不传 workspace 时不按 key 切分）和 `qwen4_qsa_topk`（PyTorch 回退，每次 19 个 kernel，120–160 µs）空间最大，`ple_prefill_short_conv_`、`ple_short_conv_`、`qwen4_hc_inject_combine`、`qwen4_hc_gate_reduce` 在大形状上为拷贝的 2–6.6 倍。官方 harness 能跑这批 benchmark。暂未优化。详见 `W7900D_AMD_optimization.md`「新算子摸底：15 个（2026-11-20）」。RTX 4090 / R9700 未测。
+W7900D 上 2026-11-20 摸底：单测 15 个全部通过（123 个用例）；8 个接近拷贝或只有小形状，`qwen4_hc_combine_norm` 边缘；`qsa_sparse_paged_attention`（拷贝的 5.4–25 倍，不传 workspace 时不按 key 切分）和 `qwen4_qsa_topk`（PyTorch 回退，每次 19 个 kernel，120–160 µs）空间最大，`ple_prefill_short_conv_`、`ple_short_conv_`、`qwen4_hc_inject_combine`、`qwen4_hc_gate_reduce` 在大形状上为拷贝的 2–6.6 倍。官方 harness 能跑这批 benchmark。详见 `W7900D_AMD_optimization.md`「新算子摸底：15 个（2026-11-20）」。RTX 4090 / R9700 未测。11-23：有空间的 6 个已做 rdna3 版，合成 [#421](https://github.com/flagos-ai/FlagGems-sglang/pull/421)（在审），官方 benchmark 相对 master：`qsa_sparse_paged_attention` 4.67–15.27×、`qwen4_qsa_topk` 7.92–9.73×、`ple_short_conv_` 1.38–2.81×、`ple_prefill_short_conv_` 4 个请求 2.82×、`qwen4_hc_inject_combine` / `qwen4_hc_gate_reduce` 1024 行起 2.83–3.90× / 1.67–2.20×；见「Qwen3.8 新算子：#421（2026-11-23）」。
+
+## b85b585 → 2667764：新增 17 个（batch13，#418）
+
+### 提交范围
+
+终点是 [2667764](https://github.com/flagos-ai/FlagGems-sglang/commit/2667764e0e84c608b8ae9cfe1f19e10b1f896ad4)（2026-11-21，Merge pull request #418）。其间还合入了 #415、#416（只加 rdna3 文件），以及 CI 脚本和 `conf/operators.yaml` 的改动（补注册 4 个 batch13 算子）。全部改动见 [b85b585...2667764](https://github.com/flagos-ai/FlagGems-sglang/compare/b85b585...2667764)。
+
+### 来源
+
+- Triton 实现来自 FlagOS 竞赛的参赛 PR（#398–#413、#417、#419，每个算子一个）；参考实现、单测和 benchmark 由 [#418](https://github.com/flagos-ai/FlagGems-sglang/pull/418)（batch13，11-21 合入）补齐。
+- 每个算子都带了 Ascend、Iluvatar、昆仑芯、沐曦、曙光的厂商版本；AMD 只有 4 个，在 `_amd/ops/`（不是 rdna3）：`dsv3_router_gemm`、`fused_qk_complex_rope`、`gemma4_fused_routing`、`silu_and_mul_masked_post_quant`。
+
+### 算子列表
+
+说明按算子名归类，未逐一核对实现。
+
+| 算子 | 说明 | PR |
+|---|---|---|
+| `apply_rotary_emb` | 旋转位置编码 | #412 |
+| `bias_gelu_tanh` | 加偏置后做 tanh 近似的 GELU | #399 |
+| `cat_pad_channels_last_3d` | channels-last 的 3D 张量拼接并填充 | #405 |
+| `dsv3_router_gemm` | DeepSeek V3 的路由 GEMM | #403 |
+| `fused_norm_rope_inplace` | 原地归一化加 RoPE | #411 |
+| `fused_qk_complex_rope` | Q / K 的复数形式 RoPE | #400 |
+| `fused_recurrent_kda` | KDA 的循环递推 | #409 |
+| `gemma4_fused_routing` | Gemma 4 的 MoE 路由 | #417 |
+| `grouped_gemma_rmsnorm` | 分组的 Gemma 风格 RMSNorm | #401 |
+| `murmur_hash32` | MurmurHash3 32 位哈希 | #398 |
+| `silu_and_mul_masked_post_per_tensor_quant` | 带掩码的 SiLU×mul，后接按张量量化 | #419 |
+| `silu_and_mul_masked_post_quant` | 带掩码的 SiLU×mul，后接量化 | #402 |
+| `silu_mul_dynamic_tensorwise_quant` | SiLU×mul，动态按张量量化 | #410 |
+| `silu_mul_static_tensorwise_quant` | SiLU×mul，静态按张量量化 | #404 |
+| `timestep_embedding` | 扩散模型的时间步嵌入 | #406 |
+| `top_k_renorm` | top-k 截断后重新归一化 | #413 |
+| `wan_rmsnorm_silu` | Wan 模型的 RMSNorm 加 SiLU | #408 |
+
+### 状态
+
+W7900D 上未测（2026-11-23 记录）。RTX 4090 / R9700 未测。
 
 ## W7900D 摸底
 

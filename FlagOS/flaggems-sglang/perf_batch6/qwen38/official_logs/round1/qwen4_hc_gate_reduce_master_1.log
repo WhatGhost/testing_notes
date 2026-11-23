@@ -1,0 +1,13 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: qwen4_hc_gate_reduce  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.009400                 N/A          [torch.Size([1, 10240]), torch.Size([1, 10240]), 4]
+SUCCESS                    N/A            0.010000                 N/A          [torch.Size([7, 10240]), torch.Size([7, 10240]), 4]
+SUCCESS                    N/A            0.017240                 N/A          [torch.Size([64, 10240]), torch.Size([64, 10240]), 4]
+SUCCESS                    N/A            0.242522                 N/A          [torch.Size([1024, 10240]), torch.Size([1024, 10240]), 4]
+SUCCESS                    N/A            2.699260                 N/A          [torch.Size([16384, 10240]), torch.Size([16384, 10240]), 4]
+
+.
+1 passed in 2.54s

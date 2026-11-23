@@ -1,0 +1,11 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: qwen4_qsa_topk  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS                    N/A            0.122320                 N/A          [torch.Size([1, 640]), torch.Size([1]), torch.Size([1]), 512]
+SUCCESS                    N/A            0.146360                 N/A          [torch.Size([7, 640]), torch.Size([7]), torch.Size([7]), 512]
+SUCCESS                    N/A            0.160161                 N/A          [torch.Size([64, 640]), torch.Size([64]), torch.Size([64]), 512]
+
+.
+1 passed in 1.82s

@@ -1,0 +1,29 @@
+ok   bench    {'rows': 1, 'topk': 512, 'page': 1}                                    | ref err generic 9.8e-04 new 9.8e-04 ws4 9.8e-04 | vs generic max 4.9e-04 rmse 9.9e-05 p99 4.9e-04
+ok   bench    {'rows': 7, 'topk': 2048, 'page': 1}                                   | ref err generic 9.8e-04 new 9.8e-04 ws4 9.8e-04 | vs generic max 4.9e-04 rmse 5.3e-05 p99 2.4e-04
+ok   bench    {'rows': 64, 'topk': 2048, 'page': 1}                                  | ref err generic 9.8e-04 new 9.8e-04 ws4 9.8e-04 | vs generic max 4.9e-04 rmse 4.5e-05 p99 2.4e-04
+ok   page16   {'rows': 1, 'topk': 33, 'page': 16}                                    | ref err generic 3.9e-03 new 3.9e-03 ws4 3.9e-03 | vs generic max 2.0e-03 rmse 3.1e-04 p99 9.8e-04
+ok   page16   {'rows': 1, 'topk': 513, 'page': 16}                                   | ref err generic 9.8e-04 new 9.8e-04 ws4 9.8e-04 | vs generic max 4.9e-04 rmse 9.3e-05 p99 4.9e-04
+ok   page16   {'rows': 1, 'topk': 2051, 'page': 16}                                  | ref err generic 4.9e-04 new 4.9e-04 ws4 4.9e-04 | vs generic max 4.9e-04 rmse 5.3e-05 p99 2.4e-04
+ok   page16   {'rows': 7, 'topk': 33, 'page': 16}                                    | ref err generic 7.8e-03 new 3.9e-03 ws4 3.9e-03 | vs generic max 3.9e-03 rmse 3.5e-04 p99 2.0e-03
+ok   page16   {'rows': 7, 'topk': 513, 'page': 16}                                   | ref err generic 2.0e-03 new 2.0e-03 ws4 2.0e-03 | vs generic max 9.8e-04 rmse 9.9e-05 p99 4.9e-04
+ok   page16   {'rows': 7, 'topk': 2051, 'page': 16}                                  | ref err generic 4.9e-04 new 4.9e-04 ws4 4.9e-04 | vs generic max 4.9e-04 rmse 5.7e-05 p99 2.4e-04
+ok   page16   {'rows': 64, 'topk': 33, 'page': 16}                                   | ref err generic 7.8e-03 new 7.8e-03 ws4 7.8e-03 | vs generic max 3.9e-03 rmse 2.3e-04 p99 9.8e-04
+ok   page16   {'rows': 64, 'topk': 513, 'page': 16}                                  | ref err generic 2.0e-03 new 2.0e-03 ws4 2.0e-03 | vs generic max 9.8e-04 rmse 8.2e-05 p99 4.9e-04
+ok   page16   {'rows': 64, 'topk': 2051, 'page': 16}                                 | ref err generic 9.8e-04 new 9.8e-04 ws4 9.8e-04 | vs generic max 4.9e-04 rmse 4.6e-05 p99 2.4e-04
+ok   dims     {'rows': 5, 'topk': 300, 'page': 16, 'head_dim': 64, 'group': 1, 'kv_h | ref err generic 9.8e-04 new 9.8e-04 ws4 9.8e-04 | vs generic max 4.9e-04 rmse 1.0e-04 p99 4.9e-04
+ok   dims     {'rows': 5, 'topk': 300, 'page': 16, 'head_dim': 64, 'group': 4, 'kv_h | ref err generic 2.0e-03 new 2.0e-03 ws4 2.0e-03 | vs generic max 9.8e-04 rmse 1.3e-04 p99 4.9e-04
+ok   dims     {'rows': 5, 'topk': 300, 'page': 16, 'head_dim': 64, 'group': 8, 'kv_h | ref err generic 2.0e-03 new 2.0e-03 ws4 2.0e-03 | vs generic max 9.8e-04 rmse 1.3e-04 p99 4.9e-04
+ok   dims     {'rows': 5, 'topk': 300, 'page': 16, 'head_dim': 128, 'group': 1, 'kv_ | ref err generic 9.8e-04 new 9.8e-04 ws4 9.8e-04 | vs generic max 4.9e-04 rmse 1.3e-04 p99 4.9e-04
+ok   dims     {'rows': 5, 'topk': 300, 'page': 16, 'head_dim': 128, 'group': 4, 'kv_ | ref err generic 2.0e-03 new 2.0e-03 ws4 2.0e-03 | vs generic max 9.8e-04 rmse 1.4e-04 p99 4.9e-04
+ok   dims     {'rows': 5, 'topk': 300, 'page': 16, 'head_dim': 128, 'group': 8, 'kv_ | ref err generic 2.0e-03 new 2.0e-03 ws4 2.0e-03 | vs generic max 2.0e-03 rmse 1.4e-04 p99 4.9e-04
+ok   nogate   {'rows': 9, 'topk': 513, 'page': 16, 'gate': False}                    | ref err generic 2.0e-03 new 2.0e-03 ws4 2.0e-03 | vs generic max 9.8e-04 rmse 1.8e-04 p99 4.9e-04
+ok   bad rows {'rows': 8, 'topk': 513, 'page': 16, 'bad_rows': True}                 | ref err generic 9.8e-04 new 2.0e-03 ws4 2.0e-03 | vs generic max 9.8e-04 rmse 8.8e-05 p99 4.9e-04
+ok   rows300  {'rows': 300, 'topk': 513, 'page': 16}                                 | ref err generic 3.9e-03 new 3.9e-03 ws4 3.9e-03 | vs generic max 2.0e-03 rmse 8.5e-05 p99 4.9e-04
+21/21 ok
+bench  rows=  1 topk=  512: generic    272.1 us  new    18.7 us  14.53x
+bench  rows=  7 topk= 2048: generic   1263.3 us  new   131.8 us   9.58x
+bench  rows= 64 topk= 2048: generic   2176.0 us  new   706.2 us   3.08x
+page16 rows=  1 topk=  513: generic    318.0 us  new    27.7 us  11.49x
+page16 rows=  7 topk= 2051: generic   1391.0 us  new   118.4 us  11.75x
+page16 rows= 64 topk= 2051: generic   2271.7 us  new   686.6 us   3.31x
+page16 rows=300 topk=  513: generic   1666.7 us  new   685.5 us   2.43x
