@@ -1,0 +1,36 @@
+== 1. benchmark inputs (raw randn k, no L2 norm): growth over tokens, generic op ==
+shape (4, 64): |k|^2 mean 128, beta mean 0.50
+  max |output| per token: t=0: 4.1e+00 (0% inf/nan), t=2: 1.0e+02 (0% inf/nan), t=4: 3.2e+03 (0% inf/nan), t=8: 5.0e+06 (0% inf/nan), t=12: 5.5e+08 (0% inf/nan), t=16: 3.0e+11 (0% inf/nan), t=20: 7.0e+13 (0% inf/nan), t=24: 1.4e+16 (0% inf/nan), t=32: 2.0e+19 (0% inf/nan), t=63: 2.1e+35 (0% inf/nan)
+  final state: 0.0% NaN, 0.0% inf
+shape (32, 128): |k|^2 mean 128, beta mean 0.50
+  max |output| per token: t=0: 1.1e+01 (0% inf/nan), t=2: 6.2e+02 (0% inf/nan), t=4: 3.2e+04 (0% inf/nan), t=8: 5.8e+07 (0% inf/nan), t=12: 7.2e+09 (0% inf/nan), t=16: 1.5e+14 (0% inf/nan), t=20: 1.3e+16 (0% inf/nan), t=24: 1.0e+19 (0% inf/nan), t=32: 4.3e+23 (0% inf/nan), t=63: 1.1e+38 (1% inf/nan)
+  final state: 100.0% NaN, 0.0% inf
+
+== 2. RV=16 vs generic ==
+bench (4,64) [blows up]            cfg (16, 4): out diffs    212/262144 (max 59493 ulp, |value| 1.69e-01..1.07e+31) | state diffs 0
+stable (16,64) l2norm              cfg (16, 4): out diffs    969/1048576 (max 32102 ulp, |value| 2.10e-05..7.13e-02) | state diffs 0
+stable (4,1) single step           cfg (16, 4): out diffs      0/4096 | state diffs 0
+stable (16,64) l2norm              cfg (1, 1): out diffs      0/1048576 | state diffs 0
+stable (16,64) l2norm              cfg (2, 1): out diffs      0/1048576 | state diffs 0
+stable (16,64) l2norm              cfg (4, 1): out diffs      0/1048576 | state diffs 0
+stable (16,64) l2norm              cfg (8, 4): out diffs      0/1048576 | state diffs 0
+stable (16,64) l2norm              cfg (32, 8): out diffs      0/1048576 | state diffs 0
+
+== 3. _sum_rows alone vs the exact adjacent-pair tree (4096 rows x 128) ==
+RV= 1 warps=1: 0 rows differ from the pair tree
+RV= 2 warps=1: 0 rows differ from the pair tree
+RV= 4 warps=1: 0 rows differ from the pair tree
+RV= 8 warps=4: 0 rows differ from the pair tree
+RV=16 warps=1: 0 rows differ from the pair tree
+RV=16 warps=2: 0 rows differ from the pair tree
+RV=16 warps=4: 0 rows differ from the pair tree
+RV=16 warps=8: 0 rows differ from the pair tree
+RV=32 warps=8: 0 rows differ from the pair tree
+RV=64 warps=8: 0 rows differ from the pair tree
+
+== 4. RV=2 vs generic (4,1) on bench (32,128): what differs in the final state ==
+output bitwise equal: True
+state: 1019381 words differ; NaN in generic 4194304, in RV=2 4194304, NaN positions differ at 0
+differing words whose XOR is only the sign bit: 1019381 / 1019381
+  generic 0xffc00000 vs RV=2 0x7fc00000: 1019377
+  generic 0x7fc00000 vs RV=2 0xffc00000: 4

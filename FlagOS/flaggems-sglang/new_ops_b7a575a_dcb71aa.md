@@ -2,7 +2,7 @@
 
 本目录 RTX 4090、W7900D、R9700 的测试都基于 flagos-ai/FlagGems-sglang 的 b7a575a，当时仓库注册了 56 个算子。到 9580d88 新增了 32 个（2026-10-21 记录），到 2aaa9b0 又新增 36 个（2026-10-29 记录），到 7e9943f 再新增 17 个（2026-11-02 记录），到 dcb71aa 又新增 6 个（2026-11-05 记录），到 1bb7755 再新增 16 个实现（2026-11-10 记录），到 5c2ed0f 再新增 18 个实现（2026-11-13 记录，含此前只有 reference/单测的 `silu_and_mul_routed`），到 567d379 再新增 17 个实现（batch12，2026-11-18 记录），到 b85b585 再新增 15 个（#395，2026-11-20 记录），到 2667764 再新增 17 个（batch13，#418，2026-11-23 记录），`ops/` 共 230 个，其间没有删除或改名的算子。各段分开记录，这份清单记录的是还没有在各张卡上测完的算子，某个算子在所有卡上都测过之后就可以从这里去掉。
 
-## 测试覆盖（2026-11-23）
+## 测试覆盖（2026-11-25）
 
 | | RTX 4090 | W7900D | R9700 |
 |---|---|---|---|
@@ -15,10 +15,10 @@
 | 第六段新增 18 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第七段新增 17 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 | 第八段新增 15 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
-| 第九段新增 17 个 | 未测 | 未测 | 未测 |
+| 第九段新增 17 个 | 未测 | 已摸底（单测 + 计时） | 未测 |
 
 - 三张卡的报告（`RTX4090_report.md`、`W7900D_report.md`、`R9700_report.md`）都停在 b7a575a 的 56 个算子，这些新增算子**在 RTX 4090 和 R9700 上一个都没有测过**，所以目前没有可以从这份清单里去掉的算子。
-- W7900D 上前三段的 85 个全部测了耗时，也都跑了单测。第三段的 17 个原来没有参考实现和单测，后来由 batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上，单测全部通过。第一段的 `residual_gate_add` 与 `silu_and_mul_masked` 等正确性修复已合入 [#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) / [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290)。第四段的 6 个单测全部通过，其中 `fused_moe`、`fused_recurrent_gated_delta_rule_packed_decode` 已随 #394 / #393 优化，其余 4 个在 2026-11-18 计时摸底。第五段 16 个单测 161 passed，并已按第三轮口径计时摸底。第六段 18 个（batch11）和第七段 17 个（batch12）在 2026-11-18 摸底：单测全部通过（FP8 类也能在 gfx1100 上运行），大多已接近拷贝速度。第八段 15 个（#395）在 2026-11-20 摸底：单测全部通过，8 个接近拷贝或只有小形状，6 个有空间，这 6 个已做 rdna3 版（#421，在审）。第九段 17 个（batch13）尚未摸底。
+- W7900D 上前三段的 85 个全部测了耗时，也都跑了单测。第三段的 17 个原来没有参考实现和单测，后来由 batch9（[#270](https://github.com/flagos-ai/FlagGems-sglang/pull/270)）补上，单测全部通过。第一段的 `residual_gate_add` 与 `silu_and_mul_masked` 等正确性修复已合入 [#289](https://github.com/flagos-ai/FlagGems-sglang/pull/289) / [#290](https://github.com/flagos-ai/FlagGems-sglang/pull/290)。第四段的 6 个单测全部通过，其中 `fused_moe`、`fused_recurrent_gated_delta_rule_packed_decode` 已随 #394 / #393 优化，其余 4 个在 2026-11-18 计时摸底。第五段 16 个单测 161 passed，并已按第三轮口径计时摸底。第六段 18 个（batch11）和第七段 17 个（batch12）在 2026-11-18 摸底：单测全部通过（FP8 类也能在 gfx1100 上运行），大多已接近拷贝速度。第八段 15 个（#395）在 2026-11-20 摸底：单测全部通过，8 个接近拷贝或只有小形状，6 个有空间，这 6 个已做 rdna3 版（#421，11-24 合入）。第九段 17 个（batch13）在 2026-11-23 摸底：单测全部通过，11 个接近拷贝或只有小形状，4 个边缘，2 个有空间，这 2 个已做 rdna3 版（#425，在审）。
 - W7900D 上做的是摸底，不是三份报告那种正式测试：用的是 benchmark 自己的形状和 `do_bench`，没有跑官方 benchmark 的全量形状，也没有做多轮稳定性复测。要把某一段标成「已测」并从清单里去掉，应当按三份报告的口径重跑。
 - 逐算子数据和在 W7900D 上的优化分批见 `W7900D_AMD_optimization.md` 的「第三轮」「batch10 摸底」「SGLang 接入正确性」。
 
@@ -462,7 +462,7 @@ W7900D 上 2026-11-18 摸底：单测 17 个全部通过；大多已接近拷贝
 
 ### 状态
 
-W7900D 上 2026-11-20 摸底：单测 15 个全部通过（123 个用例）；8 个接近拷贝或只有小形状，`qwen4_hc_combine_norm` 边缘；`qsa_sparse_paged_attention`（拷贝的 5.4–25 倍，不传 workspace 时不按 key 切分）和 `qwen4_qsa_topk`（PyTorch 回退，每次 19 个 kernel，120–160 µs）空间最大，`ple_prefill_short_conv_`、`ple_short_conv_`、`qwen4_hc_inject_combine`、`qwen4_hc_gate_reduce` 在大形状上为拷贝的 2–6.6 倍。官方 harness 能跑这批 benchmark。详见 `W7900D_AMD_optimization.md`「新算子摸底：15 个（2026-11-20）」。RTX 4090 / R9700 未测。11-23：有空间的 6 个已做 rdna3 版，合成 [#421](https://github.com/flagos-ai/FlagGems-sglang/pull/421)（在审），官方 benchmark 相对 master：`qsa_sparse_paged_attention` 4.67–15.27×、`qwen4_qsa_topk` 7.92–9.73×、`ple_short_conv_` 1.38–2.81×、`ple_prefill_short_conv_` 4 个请求 2.82×、`qwen4_hc_inject_combine` / `qwen4_hc_gate_reduce` 1024 行起 2.83–3.90× / 1.67–2.20×；见「Qwen3.8 新算子：#421（2026-11-23）」。
+W7900D 上 2026-11-20 摸底：单测 15 个全部通过（123 个用例）；8 个接近拷贝或只有小形状，`qwen4_hc_combine_norm` 边缘；`qsa_sparse_paged_attention`（拷贝的 5.4–25 倍，不传 workspace 时不按 key 切分）和 `qwen4_qsa_topk`（PyTorch 回退，每次 19 个 kernel，120–160 µs）空间最大，`ple_prefill_short_conv_`、`ple_short_conv_`、`qwen4_hc_inject_combine`、`qwen4_hc_gate_reduce` 在大形状上为拷贝的 2–6.6 倍。官方 harness 能跑这批 benchmark。详见 `W7900D_AMD_optimization.md`「新算子摸底：15 个（2026-11-20）」。RTX 4090 / R9700 未测。11-23：有空间的 6 个已做 rdna3 版，合成 [#421](https://github.com/flagos-ai/FlagGems-sglang/pull/421)（11-24 合入），官方 benchmark 相对 master：`qsa_sparse_paged_attention` 4.67–15.27×、`qwen4_qsa_topk` 7.92–9.73×、`ple_short_conv_` 1.38–2.81×、`ple_prefill_short_conv_` 4 个请求 2.82×、`qwen4_hc_inject_combine` / `qwen4_hc_gate_reduce` 1024 行起 2.83–3.90× / 1.67–2.20×；见「Qwen3.8 新算子：#421（2026-11-23）」。
 
 ## b85b585 → 2667764：新增 17 个（batch13，#418）
 
@@ -501,7 +501,7 @@ W7900D 上 2026-11-20 摸底：单测 15 个全部通过（123 个用例）；8 
 
 ### 状态
 
-W7900D 上未测（2026-11-23 记录）。RTX 4090 / R9700 未测。
+W7900D 上 2026-11-23 摸底：单测 17 个全部通过（169 个用例）；10 个接近拷贝，`timestep_embedding` 只有小形状，`gemma4_fused_routing`、`grouped_gemma_rmsnorm`、`silu_mul_dynamic_tensorwise_quant`、`top_k_renorm` 边缘（离拷贝最多差 4–10 µs）；`dsv3_router_gemm`（拷贝的 1.25–4.83 倍，1–4 个 token 时 AMD 版只用 1 个 warp）和 `fused_recurrent_kda`（3.4–5.2 倍）有空间。这两个算子的官方 benchmark 因 dict 输入跑不起来。详见 `W7900D_AMD_optimization.md`「新算子摸底：batch13 的 17 个（2026-11-23）」。RTX 4090 / R9700 未测。11-25：这 2 个已做 rdna3 版，合成 [#425](https://github.com/flagos-ai/FlagGems-sglang/pull/425)（在审），官方形状上相对 master / 通用实现：`dsv3_router_gemm` 1.00–3.28×（1–4 个 token 1.89–3.28×），`fused_recurrent_kda` 1.00–1.24×（开 L2 norm 1.07–1.32×，输出与通用实现逐位相同）；见「batch13：`dsv3_router_gemm` 与 `fused_recurrent_kda`：#425（2026-11-25）」。
 
 ## W7900D 摸底
 

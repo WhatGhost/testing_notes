@@ -1,0 +1,21 @@
+== 1. floors ==
+one empty kernel 8.7 us, two 11.7 us
+read the 128-expert weight once (1.84 MB): 13.6 us (programs 192, warps 4)
+read the 256-expert weight once (3.67 MB): 18.2 us (programs 96, warps 8)
+read the 384-expert weight once (5.51 MB): 22.8 us (programs 192, warps 8)
+read the 512-expert weight once (7.34 MB): 27.6 us (programs 192, warps 4)
+
+== 2. shipped op vs its pieces, master scalar kernel with more warps, single-kernel GEMV ==
+( 1,256) master  38.5 | shipped  23.7 (dot only  19.7) | scalar best  19.6 @warps 2 | gemv best  20.5 @(EB,BK,warps)=(2, 1024, 4) err 2.9e-04 (master 3.1e-04) | next 20.9@(4, 1024, 4)
+( 1,384) master  56.4 | shipped  28.9 (dot only  24.7) | scalar best  25.7 @warps 2 | gemv best  25.4 @(EB,BK,warps)=(2, 1024, 2) err 3.8e-04 (master 4.0e-04) | next 25.4@(4, 1024, 4)
+( 2,256) master  50.0 | shipped  23.8 (dot only  19.9) | scalar best  20.1 @warps 8 | gemv best  20.9 @(EB,BK,warps)=(2, 1024, 4) err 4.1e-04 (master 4.1e-04) | next 21.2@(1, 1024, 2)
+( 2,384) master  62.2 | shipped  29.0 (dot only  25.0) | scalar best  31.0 @warps 2 | gemv best  25.5 @(EB,BK,warps)=(4, 1024, 4) err 4.3e-04 (master 4.3e-04) | next 25.6@(1, 1024, 2)
+( 4,256) master  70.3 | shipped  24.0 (dot only  19.8) | scalar best  20.0 @warps 8 | gemv best  21.7 @(EB,BK,warps)=(1, 1024, 4) err 4.7e-04 (master 4.7e-04) | next 21.7@(2, 1024, 4)
+( 4,384) master  80.9 | shipped  29.0 (dot only  24.8) | scalar best  24.4 @warps 8 | gemv best  25.8 @(EB,BK,warps)=(2, 1024, 8) err 4.1e-04 (master 4.3e-04) | next 25.8@(4, 1024, 8)
+( 8,256) master  22.6 | shipped  22.3 (dot only   nan) | scalar best  21.5 @warps 8 | gemv best  22.1 @(EB,BK,warps)=(2, 1024, 4) err 4.9e-04 (master 4.6e-04) | next 22.4@(4, 1024, 8)
+( 8,384) master  27.1 | shipped  27.2 (dot only   nan) | scalar best  26.9 @warps 8 | gemv best  26.6 @(EB,BK,warps)=(1, 1024, 4) err 6.1e-04 (master 6.1e-04) | next 26.8@(2, 1024, 4)
+(16,256) master  31.9 | shipped  24.6 (dot only  20.6) | scalar best  25.6 @warps 2 | gemv best  24.8 @(EB,BK,warps)=(2, 1024, 8) err 6.9e-04 (master 6.9e-04) | next 26.4@(2, 512, 4)
+(16,384) master  35.9 | shipped  29.8 (dot only  25.5) | scalar best  32.0 @warps 2 | gemv best  30.2 @(EB,BK,warps)=(2, 512, 4) err 4.9e-04 (master 4.9e-04) | next 31.0@(2, 512, 8)
+( 1,128) master  25.8 | shipped  19.5 (dot only  15.4) | scalar best  13.9 @warps 8 | gemv best  16.5 @(EB,BK,warps)=(2, 1024, 2) err 4.7e-04 (master 4.7e-04) | next 16.6@(4, 1024, 4)
+(16,512) master  45.1 | shipped  35.8 (dot only  31.6) | scalar best  38.4 @warps 2 | gemv best  38.8 @(EB,BK,warps)=(2, 1024, 8) err 7.6e-04 (master 7.6e-04) | next 42.2@(1, 1024, 8)
+( 8, 64) master  13.1 | shipped  13.0 (dot only   nan) | scalar best  12.6 @warps 2 | gemv best  15.6 @(EB,BK,warps)=(1, 1024, 8) err 4.4e-04 (master 4.3e-04) | next 16.0@(1, 1024, 4)

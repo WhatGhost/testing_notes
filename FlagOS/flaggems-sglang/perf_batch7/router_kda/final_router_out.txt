@@ -1,0 +1,54 @@
+ok   bench (1, 256)     max err master 3.05e-04 new 2.90e-04 (|ref| max 208.2)
+ok   bench (1, 384)     max err master 3.97e-04 new 4.27e-04 (|ref| max 270.0)
+ok   bench (2, 256)     max err master 4.12e-04 new 4.12e-04 (|ref| max 251.3)
+ok   bench (2, 384)     max err master 4.27e-04 new 4.27e-04 (|ref| max 270.4)
+ok   bench (4, 256)     max err master 4.73e-04 new 4.73e-04 (|ref| max 284.7)
+ok   bench (4, 384)     max err master 4.27e-04 new 4.12e-04 (|ref| max 271.0)
+ok   bench (8, 256)     max err master 4.58e-04 new 4.73e-04 (|ref| max 318.2)
+ok   bench (8, 384)     max err master 6.10e-04 new 6.10e-04 (|ref| max 318.8)
+ok   bench (16, 256)    max err master 6.87e-04 new 6.71e-04 (|ref| max 331.9)
+ok   bench (16, 384)    max err master 4.88e-04 new 4.73e-04 (|ref| max 306.1)
+ok   bench (1, 128)     max err master 4.73e-04 new 4.58e-04 (|ref| max 248.9)
+ok   bench (16, 512)    max err master 7.63e-04 new 7.63e-04 (|ref| max 319.6)
+ok   bench (8, 64)      max err master 4.27e-04 new 4.27e-04 (|ref| max 274.2)
+ok   rows=3             max err master 3.05e-04 new 3.05e-04 (|ref| max 372.5)
+ok   rows=5             max err master 5.34e-04 new 5.19e-04 (|ref| max 267.7)
+FAIL rows=31            max err master 5.19e-04 new 5.19e-04 (|ref| max 303.9)
+ok   rows=64            max err master 7.93e-04 new 7.63e-04 (|ref| max 355.9)
+FAIL rows=512           max err master 9.77e-04 new 9.46e-04 (|ref| max 398.3)
+FAIL rows=4096          max err master 1.13e-03 new 1.16e-03 (|ref| max 405.9)
+FAIL fp16               max err master 7.78e-04 new 7.63e-04 (|ref| max 283.7)
+ok   bf16 out           max err master 2.50e-01 new 2.50e-01 (|ref| max 298.0)
+ok   strided hidden     max err master 6.41e-04 new 6.26e-04 (|ref| max 342.3)
+ok   experts=100        max err master 4.27e-04 new 4.27e-04 (|ref| max 270.0)
+ok   hidden=1000        max err master 3.05e-05 new 3.05e-05 (|ref| max 90.3)
+ok   fp32 inputs        max err master 6.94e-04 new 6.94e-04 (|ref| max 250.6)
+21/25 within the unit-test tolerance
+tokens, experts    master  previous      now  now vs master  now vs previous  kernel
+-- official
+(1, 256)             38.6      23.7     20.5          1.89x            1.16x  gemv
+(1, 384)             55.9      28.9     25.2          2.22x            1.15x  gemv
+(2, 256)             49.3      23.7     21.0          2.35x            1.13x  gemv
+(2, 384)             64.2      28.8     25.6          2.51x            1.13x  gemv
+(4, 256)             70.4      23.7     21.4          3.28x            1.11x  gemv
+(4, 384)             80.9      29.2     26.2          3.09x            1.11x  gemv
+(8, 256)             22.4      22.4     21.3          1.05x            1.05x  scalar
+(8, 384)             26.9      26.9     26.9          1.00x            1.00x  scalar
+(16, 256)            31.6      24.3     24.4          1.30x            1.00x  dot
+(16, 384)            35.9      29.9     29.9          1.20x            1.00x  dot
+(1, 128)             26.0      19.6     14.0          1.86x            1.40x  scalar
+(16, 512)            45.0      35.3     35.2          1.28x            1.00x  dot
+(8, 64)              13.0      13.0     12.6          1.03x            1.03x  scalar
+-- extra
+(3, 256)             56.9      23.7     21.4          2.65x            1.10x  gemv
+(5, 256)             23.4      23.9     20.4          1.15x            1.17x  scalar
+(6, 384)             27.0      29.8     25.1          1.08x            1.19x  scalar
+(12, 256)            23.6      24.2     24.1          0.98x            1.00x  dot
+(2, 128)             30.2      19.7     14.0          2.16x            1.41x  scalar
+(4, 64)              26.1      26.1     11.7          2.23x            2.24x  scalar
+(16, 64)             21.6      21.7     14.5          1.49x            1.49x  scalar
+(16, 128)            23.8      20.4     18.8          1.27x            1.08x  scalar
+(4, 512)             95.9      34.3     30.6          3.14x            1.12x  gemv
+(64, 256)            71.6      27.7     27.7          2.58x            1.00x  dot
+(512, 256)          596.9      69.1     68.9          8.66x            1.00x  dot
+(4096, 256)        6158.1     419.6    419.3         14.69x            1.00x  dot

@@ -1,0 +1,44 @@
+== bitwise vs generic ==
+22/22 bitwise identical
+
+== timings (us) ==
+case                    generic  previous      now  now vs generic  now vs previous
+bench (1, 64)              40.4      40.0     40.0           1.01x            1.00x
+bench (4, 64)             112.8     102.9    102.9           1.10x            1.00x
+bench (16, 64)            320.6     305.5    305.6           1.05x            1.00x
+bench (64, 64)           1096.5    1095.3   1096.1           1.00x            1.00x
+bench (2, 64)              73.8      59.8     59.8           1.24x            1.00x
+bench (8, 32)             112.0     102.4    102.4           1.09x            1.00x
+bench (32, 128)          1098.6    1099.3   1099.0           1.00x            1.00x
+decode b=1                 14.8      14.9     14.8           1.00x            1.00x
+decode b=16                49.2      46.8     46.8           1.05x            1.00x
+decode b=64               206.3     155.4    155.4           1.33x            1.00x
+decode b=256              548.8     454.6    454.6           1.21x            1.00x
+bench (1, 64) +norm        45.9      45.6     42.7           1.07x            1.07x
+bench (4, 64) +norm       132.0     121.9    106.8           1.24x            1.14x
+bench (16, 64) +norm      402.6     386.8    329.8           1.22x            1.17x
+bench (64, 64) +norm     1394.1    1394.3   1157.2           1.20x            1.20x
+bench (2, 64) +norm        83.7      69.7     63.4           1.32x            1.10x
+bench (8, 32) +norm       130.8     121.8    107.7           1.21x            1.13x
+bench (32, 128) +norm    1399.8    1401.0   1164.1           1.20x            1.20x
+decode b=1 +norm           15.6      15.7     15.8           0.99x            0.99x
+decode b=16 +norm          50.6      48.6     47.7           1.06x            1.02x
+decode b=64 +norm         210.2     159.8    156.6           1.34x            1.02x
+decode b=256 +norm        571.2     475.4    467.0           1.22x            1.02x
+ok   bench (1, 64)
+ok   bench (4, 64)
+ok   bench (16, 64)
+ok   bench (64, 64)
+ok   bench (2, 64)
+ok   bench (8, 32)
+ok   bench (32, 128)
+ok   test (1,16,2,64,64)
+ok   test (2,64,4,128,128)
+ok   l2norm
+ok   headwise beta
+ok   decode t=1 b=64
+ok   decode t=1 b=3
+ok   fp16 b=5
+ok   vd=96 kd=128
+ok   l2norm b=16
+16/16 bitwise identical (output and final state)

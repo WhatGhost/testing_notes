@@ -1,0 +1,17 @@
+apply_rotary_emb rc=0 11 passed in 1.35s
+bias_gelu_tanh rc=0 10 passed in 1.15s
+cat_pad_channels_last_3d rc=0 8 passed in 1.28s
+dsv3_router_gemm rc=0 14 passed in 1.48s
+fused_norm_rope_inplace rc=0 11 passed in 1.40s
+fused_qk_complex_rope rc=0 10 passed in 1.38s
+fused_recurrent_kda rc=0 8 passed in 1.47s
+gemma4_fused_routing rc=0 19 passed in 1.79s
+grouped_gemma_rmsnorm rc=0 13 passed in 1.53s
+murmur_hash32 rc=0 9 passed in 1.22s
+silu_and_mul_masked_post_per_tensor_quant rc=0 5 passed in 1.24s
+silu_and_mul_masked_post_quant rc=0 5 passed in 1.73s
+silu_mul_dynamic_tensorwise_quant rc=0 6 passed in 1.84s
+silu_mul_static_tensorwise_quant rc=0 9 passed in 1.26s
+timestep_embedding rc=0 12 passed in 1.30s
+top_k_renorm rc=0 9 passed in 3.19s
+wan_rmsnorm_silu rc=0 10 passed in 1.32s

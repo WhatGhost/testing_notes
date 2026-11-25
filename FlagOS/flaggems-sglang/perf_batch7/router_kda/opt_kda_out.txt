@@ -1,0 +1,32 @@
+== 1. decode roofline: read + write the fp32 state once ==
+b= 16:   16.8 MB moved | copy_    45.1 us (  372 GB/s)  triton copy    42.2 us (  398 GB/s)
+b= 64:   67.1 MB moved | copy_   173.4 us (  387 GB/s)  triton copy   174.5 us (  385 GB/s)
+b=256:  268.4 MB moved | copy_   484.9 us (  554 GB/s)  triton copy   484.7 us (  554 GB/s)
+
+== 2. per-kernel times (shipped config) ==
+bench (1, 64)      generic     40.5 | shipped     40.7 (prepare   12.6, recurrent     32.8) | a*b variant     41.4 (0.98x vs shipped)
+bench (4, 64)      generic    112.3 | shipped    102.6 (prepare   25.5, recurrent     82.9) | a*b variant    101.2 (1.01x vs shipped)
+bench (16, 64)     generic    322.6 | shipped    304.5 (prepare   69.8, recurrent    248.5) | a*b variant    296.1 (1.03x vs shipped)
+bench (64, 64)     generic   1107.8 | shipped   1111.2 (prepare  253.7, recurrent    902.8) | a*b variant   1097.0 (1.01x vs shipped)
+bench (2, 64)      generic     73.8 | shipped     59.7 (prepare   16.6, recurrent     46.9) | a*b variant     58.0 (1.03x vs shipped)
+bench (8, 32)      generic    110.9 | shipped    102.1 (prepare   25.8, recurrent     77.8) | a*b variant    101.3 (1.01x vs shipped)
+bench (32, 128)    generic   1107.5 | shipped   1107.7 (prepare  258.0, recurrent    867.1) | a*b variant   1103.0 (1.00x vs shipped)
+decode b=16        generic     50.1 | shipped     48.8 (prepare   11.9, recurrent     42.4) | a*b variant     48.8 (1.00x vs shipped)
+decode b=64        generic    213.4 | shipped    161.4 (prepare   18.1, recurrent    149.5) | a*b variant    161.6 (1.00x vs shipped)
+decode b=256       generic    561.2 | shipped    477.0 (prepare   44.8, recurrent    441.8) | a*b variant    477.2 (1.00x vs shipped)
+
+== 3. a*b variant vs generic: bitwise ==
+bench (1, 64)      strict ok | ignoring NaN sign ok
+bench (4, 64)      strict ok | ignoring NaN sign ok
+bench (16, 64)     strict ok | ignoring NaN sign ok
+bench (64, 64)     strict DIFF | ignoring NaN sign ok
+bench (2, 64)      strict ok | ignoring NaN sign ok
+bench (8, 32)      strict ok | ignoring NaN sign ok
+bench (32, 128)    strict DIFF | ignoring NaN sign ok
+decode b=16        strict ok | ignoring NaN sign ok
+decode b=64        strict ok | ignoring NaN sign ok
+decode b=256       strict ok | ignoring NaN sign ok
+
+== 4. decode tile sweep (recurrent kernel only) ==
+b=64: (4, 8):149.3  (8, 8):170.1  (4, 4):170.8  (1, 1):173.7  (2, 2):175.0  (16, 8):181.0  (32, 8):181.2  (8, 4):182.9
+b=256: (4, 8):442.3  (8, 8):474.3  (1, 1):477.5  (4, 4):478.9  (2, 2):484.1  (32, 8):495.6  (16, 8):496.6  (8, 4):498.7

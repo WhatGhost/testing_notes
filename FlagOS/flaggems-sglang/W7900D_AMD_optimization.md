@@ -264,15 +264,16 @@ rocprof 这条路走不通：这台机器上 GL2C（L2）计数器全部返回 0
 
 **不建议投入**：74 个已接近拷贝速度的，30 个只有小形状的。后者要靠合并 kernel、去掉主机同步和 HIP graph，不是单个 kernel 的事。batch10 新合入的 16 个算子摸底后也大多落在这一档，见「batch10 摸底（2026-11-10）」。
 
-**当前优先顺序（2026-11-23）**：
+**当前优先顺序（2026-11-25）**：
 
 1. **已完成**：#331 已合入；SGLang 实测较慢的 4 个 rdna3 算子（#371）、第三批（#390）、第四批有收益的 6 个（#391）都已于 11-17 合入（见「SGLang 实测较慢的 rdna3 算子（2026-11-13）」「收尾第三轮分批：#390 与 #391（2026-11-17）」）；decode 带 stride 的 `q` 加 GDN decode（#393）、rdna3 版 `fused_moe`（#394）已于 11-18 合入（见「SGLang 路径：#393 与 #394（2026-11-18）」）。
 2. **第三轮分批已收尾**：第四批其余 9 个和补测的 `silu_and_mul_masked` 摸底后已接近拷贝速度或收益太小，不做；第一批的 2 个遗留等上游定单测口径。
 3. **正确性（接 SGLang）**：`chunk_gated_delta_rule_fwd`、`moe_align_block_size`、`fused_gate_sigmoid_mul_add`、`fused_qkvzba_split_reshape_cat` 已修好、暂存 fork 分支，等与 FlagOS 讨论放置位置和单测强度（详见「SGLang 接入正确性」）。
 4. **SGLang 路径上的下一步**：MoE 融合（#394）和 GDN decode 递推（#393）已做；剩 `decode_grouped_attention` 中等 batch、长上下文的 split-KV 配置（收益有限）。插件侧：要把 MoE 路由到 FlagGems-sglang 才能用上 #394（插件现在在 AMD 上跑 SGLang 自己的 Triton `fused_moe`），GemmaRMSNorm 改走算子库，两项都要另向插件仓库提 PR。
 5. **新算子摸底已完成（2026-11-18）**：第四段剩下的 4 个、batch11 的 18 个和 batch12 的 17 个，单测全部通过（FP8 类也能运行），大多已接近拷贝速度，见「新算子摸底：39 个（2026-11-18）」。其中有空间的 5 个已做完（11-19）：FP8 GEMM 两个为 [#415](https://github.com/flagos-ai/FlagGems-sglang/pull/415)，`awq_gemm` 加 `mla_kv_pack_quantize_fp8` 为 [#416](https://github.com/flagos-ai/FlagGems-sglang/pull/416)（11-20 合入）；`triton_sparse_mla_fwd` 试了三种做法都没有收益，放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
-6. **新算子摸底（2026-11-20）**：上游 master 11-19 前移到 `b85b585`（#395），新增的 15 个 Qwen3.8 算子（HC / QSA / PLE 系列）单测全部通过；`qsa_sparse_paged_attention`（拷贝的 5.4–25 倍）和 `qwen4_qsa_topk`（PyTorch 回退，每次 19 个 kernel）空间最大，另有 4 个大形状上为拷贝的 2–6.6 倍，见「新算子摸底：15 个（2026-11-20）」。这 6 个已做 rdna3 版，合成 [#421](https://github.com/flagos-ai/FlagGems-sglang/pull/421)（11-23 提交，在审），见「Qwen3.8 新算子：#421（2026-11-23）」。
-7. **下一步**：上游 master 11-21 前移到 `2667764`（batch13，#418），新增 17 个算子，待摸底。
+6. **新算子摸底（2026-11-20）**：上游 master 11-19 前移到 `b85b585`（#395），新增的 15 个 Qwen3.8 算子（HC / QSA / PLE 系列）单测全部通过；`qsa_sparse_paged_attention`（拷贝的 5.4–25 倍）和 `qwen4_qsa_topk`（PyTorch 回退，每次 19 个 kernel）空间最大，另有 4 个大形状上为拷贝的 2–6.6 倍，见「新算子摸底：15 个（2026-11-20）」。这 6 个已做 rdna3 版，合成 [#421](https://github.com/flagos-ai/FlagGems-sglang/pull/421)（11-23 提交，11-24 合入），见「Qwen3.8 新算子：#421（2026-11-23）」。
+7. **batch13 摸底与 #425（2026-11-23 至 11-25）**：上游 master 11-21 前移到 `2667764`（batch13，#418），新增的 17 个算子单测全部通过；11 个接近拷贝或只有小形状，4 个边缘（离拷贝最多差 4–10 µs，不做），`dsv3_router_gemm`、`fused_recurrent_kda` 有空间，见「新算子摸底：batch13 的 17 个（2026-11-23）」。这 2 个已做 rdna3 版，合成 [#425](https://github.com/flagos-ai/FlagGems-sglang/pull/425)（11-25 提交，在审），见「batch13：`dsv3_router_gemm` 与 `fused_recurrent_kda`：#425（2026-11-25）」。
+8. **下一步**：待定；这两个算子的剩余空间见 #425 一节末尾。
 
 ### 待办总览（2026-11-13，11-17 更新第一组，11-18 更新第三组）
 
@@ -291,8 +292,8 @@ rocprof 这条路走不通：这台机器上 GL2C（L2）计数器全部返回 0
 
 - 第四段（#279）6 个：`fused_moe`、`fused_recurrent_gated_delta_rule_packed_decode` 已随 #394 / #393 做完，其余 4 个 11-18 摸底，没有新目标。
 - 第六段（batch11，`5c2ed0f`）18 个和 batch12（#392）17 个：11-18 摸底，单测全部通过；FP8 GEMM `w8a8_block_fp8_matmul`、`triton_scaled_mm` 有约 4 倍 / 2 倍空间，`mla_kv_pack_quantize_fp8`、`triton_sparse_mla_fwd`、`awq_gemm` 有一些空间；另发现 33 个官方 benchmark 因 dict 输入跑不起来。见「新算子摸底：39 个（2026-11-18）」。11-19 做完：FP8 GEMM 1.00–5.16× / 1.00–2.82×，`awq_gemm` fp32 1.00–1.78×、fp16 / bf16 最多 33×，`mla_kv_pack_quantize_fp8` 最多 1.19×，#415、#416 已于 11-20 合入；`triton_sparse_mla_fwd` 放弃。见「FP8 GEMM 与三个小项（2026-11-19）」。
-- 上游 `b85b585`（#395，11-19）新增的 15 个（HC / QSA / PLE 系列）：11-20 摸底，单测全部通过，8 个接近拷贝或只有小形状、1 个边缘、6 个有空间（`qsa_sparse_paged_attention`、`qwen4_qsa_topk` 最大），见「新算子摸底：15 个（2026-11-20）」。11-23 这 6 个已做完，官方 benchmark 1.4–15.3×（HC 两个从 1024 行起），提为 #421（在审），见「Qwen3.8 新算子：#421（2026-11-23）」。
-- 上游 `2667764`（batch13，#418，11-21）新增的 17 个：未摸底。
+- 上游 `b85b585`（#395，11-19）新增的 15 个（HC / QSA / PLE 系列）：11-20 摸底，单测全部通过，8 个接近拷贝或只有小形状、1 个边缘、6 个有空间（`qsa_sparse_paged_attention`、`qwen4_qsa_topk` 最大），见「新算子摸底：15 个（2026-11-20）」。11-23 这 6 个已做完，官方 benchmark 1.4–15.3×（HC 两个从 1024 行起），提为 #421（11-24 合入），见「Qwen3.8 新算子：#421（2026-11-23）」。
+- 上游 `2667764`（batch13，#418，11-21）新增的 17 个：11-23 摸底，单测全部通过，11 个接近拷贝或只有小形状、4 个边缘、2 个有空间（`dsv3_router_gemm`、`fused_recurrent_kda`），见「新算子摸底：batch13 的 17 个（2026-11-23）」。这 2 个已做完：官方形状上 `dsv3_router_gemm` 1.00–3.28×、`fused_recurrent_kda` 1.00–1.24×（开 L2 norm 1.07–1.32×），提为 #425（在审），见「batch13：`dsv3_router_gemm` 与 `fused_recurrent_kda`：#425（2026-11-25）」。
 - RTX 4090、R9700 上，最初 56 个之后新增的算子都没测。
 
 **三、SGLang 测试中暴露出来的**
@@ -650,7 +651,7 @@ SGLang 一侧：`ltx2_split_rotary`、`embedding_lora_a`、`apply_token_bitmask`
 
 ### Qwen3.8 新算子：#421（2026-11-23）
 
-接上一节：有空间的 6 个都做了 rdna3 版，合成 [#421](https://github.com/flagos-ai/FlagGems-sglang/pull/421)（11-23 提交，一个提交、基于上游 `2667764`，CI 的代码风格和 CLA 通过，在审），只在 `_amd/rdna3/ops/` 下加 6 个新文件。这批的官方 benchmark 能跑（输入是元组），性能用官方 benchmark（comprehensive、kernel 模式），master 与 PR 两棵树交替 3 轮取中位数，额外形状用 `do_bench`。上游 11-21 前移到 `2667764`（batch13，#418），只新增文件，不涉及这 6 个算子。
+接上一节：有空间的 6 个都做了 rdna3 版，合成 [#421](https://github.com/flagos-ai/FlagGems-sglang/pull/421)（11-23 提交，一个提交、基于上游 `2667764`，11-24 合入），只在 `_amd/rdna3/ops/` 下加 6 个新文件。这批的官方 benchmark 能跑（输入是元组），性能用官方 benchmark（comprehensive、kernel 模式），master 与 PR 两棵树交替 3 轮取中位数，额外形状用 `do_bench`。上游 11-21 前移到 `2667764`（batch13，#418），只新增文件，不涉及这 6 个算子。
 
 | 算子 | 病因 | 改法 | 官方 benchmark（相对 master） | 正确性 |
 |---|---|---|---|---|
@@ -672,6 +673,49 @@ SGLang 一侧：`ltx2_split_rotary`、`embedding_lora_a`、`apply_token_bitmask`
 - 环境：`git fetch` 走 HTTPS 时 TLS 报错（GnuTLS recv error -110），工作树改用 GitHub API 下载源码包建立（本地提交"upstream 2667764"作基线），推送仍用 git-data API 脚本。
 
 数据和脚本在 `perf_batch6/qwen38/`：A 的扫描（`a_sweep.py`、`a_rule.py` 及日志）和正确性、计时（`a_check.py`、`a_check_final.log`）；B（`b_check.py`、`b_route.py`、`b_one.py`、`b_rank.py`、`b_warps.py`）；C（`c1_check.py`、`c1_sweep.py`、`c2_check.py`、`c2_blocks.py`、`c2_reset.py`、`c2_prof.py`、`c_prof.py`）；D（`d_check.py`）；官方 benchmark 脚本（`bench_a.sh`、`bench_a2.sh`、`bench_a_parse.py`）和日志（`official_logs/round1/` 是 6 个算子第一次的 3 轮，`round2/` 是改规则后的 `ple_prefill_short_conv_` 和 `qwen4_hc_inject_combine`）；PR 描述 `pr_body_qwen38.md`。
+
+### 新算子摸底：batch13 的 17 个（2026-11-23）
+
+范围：上游 [#418](https://github.com/flagos-ai/FlagGems-sglang/pull/418)（11-21 合入，master 到 `2667764`）补齐参考实现、单测和 benchmark 的 17 个 batch13 算子，Triton 实现来自竞赛 PR（#398–#413、#417、#419）。都没有 rdna3 版本；其中 4 个有 `_amd/ops/` 版本（`dsv3_router_gemm`、`fused_qk_complex_rope`、`gemma4_fused_routing`、`silu_and_mul_masked_post_quant`），其余走通用实现。
+
+单测 17 个全部通过（169 个用例）。口径同上一轮：官方 benchmark 的形状和输入，耗时 ÷ 搬运同样字节数的拷贝耗时（都用 `do_bench`）。
+
+| 分档 | 算子 |
+|---|---|
+| 接近拷贝（10） | `apply_rotary_emb`（0.60–1.03）、`bias_gelu_tanh`（0.92–1.01）、`cat_pad_channels_last_3d`（0.63–0.94）、`fused_norm_rope_inplace`（0.68–1.09）、`fused_qk_complex_rope`（0.98–1.13）、`murmur_hash32`（0.68–1.01）、`silu_and_mul_masked_post_per_tensor_quant`（1.00–1.17，最大形状 1.00）、`silu_and_mul_masked_post_quant`（0.52–1.15，最大形状 1.09）、`silu_mul_static_tensorwise_quant`（0.83–1.11）、`wan_rmsnorm_silu`（0.69–1.12） |
+| 只有小形状（1） | `timestep_embedding`（8.8–14.2 µs） |
+| 边缘（4） | `gemma4_fused_routing`（最多 1.29，最大形状 20.8 µs）、`grouped_gemma_rmsnorm`（最多 1.34）、`silu_mul_dynamic_tensorwise_quant`（最多 1.53，两个 kernel）、`top_k_renorm`（(8, 32000, 100) 1.82，大形状 1.08）；离拷贝最多差 4.3 / 8.4 / 7.9 / 9.6 µs |
+| 有空间（2） | 见下 |
+
+| 算子 | 现状 | 耗时 ÷ 拷贝 | 原因（初判） |
+|---|---|---:|---|
+| `dsv3_router_gemm` | 1–4 个 token 39–81 µs，8 / 16 个 token 22–45 µs | 1.25–4.83 | AMD 版每个 (token, 专家) 一个程序，1–4 个 token 时只用 1 个 warp，权重按 token 重复读 |
+| `fused_recurrent_kda` | (64, 64)、(32, 128) 约 1110 µs | 3.4–5.2 | 两个 kernel：q / k / decay 的预处理（fp64）和逐 token 递推；profile 看递推占主要部分（后来分 kernel 计时，预处理占 23–31%，见下一节） |
+
+数据和脚本在 `perf_batch7/survey/`（`s7_survey.py`、`s7_survey.json` / `.log`、`s7_ops.txt`、`s7_ut.sh`、`s7_ut.summary`、`unit_tests/`）。
+
+### batch13：`dsv3_router_gemm` 与 `fused_recurrent_kda`：#425（2026-11-25）
+
+接上一节：有空间的 2 个做了 rdna3 版，合成 [#425](https://github.com/flagos-ai/FlagGems-sglang/pull/425)（11-25 提交，一个提交、基于上游 `1d9e38f`（#421 合入后），CI 的代码风格和 CLA 通过，在审），只在 `_amd/rdna3/ops/` 下加 2 个新文件。这两个算子的官方 benchmark 跑不起来（dict 输入，参考实现被调用时没有参数），性能用官方的形状和输入、`do_bench`，master 与 PR 在同一进程内交替 3 轮取中位数；对照实现自 `2667764` 起没有变化。边缘的 4 个离拷贝最多差 4–10 µs，不做。
+
+| 算子 | 病因 | 改法 | 结果（相对 master / 通用实现） | 正确性 |
+|---|---|---|---|---|
+| `dsv3_router_gemm` | AMD 版每个 (token, 专家) 一个程序，1–4 个 token 只用 1 个 warp（1 → 4 个 token 从 39 涨到 71 µs）；16 个 token 时每个专家一个程序、读全部 16 行 token；4096 个 token 要 5.9 ms | 16 位输入：专家 ≥ 256、1–4 个 token 用单 kernel GEMV（每个程序 2 个专家、K 步 1024、4 warps）；专家 < 256 或 5–8 个 token 用 AMD 的标量 kernel，分别 2 / 8 warps；9 个 token 起用 WMMA，16 行 × 16–64 个专家的块，网格小时切 hidden、第二个 kernel 相加；其他 dtype 保持 AMD 实现 | 官方形状 1.00–3.28×（1–4 个 token 1.89–3.28×，16 个 token 1.20–1.30×，128 个专家 1.86×）；64 / 512 / 4096 个 token 2.58× / 8.66× / 14.69× | 与 fp32 参考的最大误差与 master 相当；换 warp 数会改变 `tl.sum` 的求和顺序，与 master 不逐位相同 |
+| `fused_recurrent_kda` | 递推 kernel 按指令数估算已接近 VALU 吞吐上限（每行状态分散在 32 个 lane 上，行求和要跨 lane）；预处理 `_prepare` 占 23–31%，开 L2 norm 时每行 4 个 warp，行求和跨 warp 走 LDS | 只改切法：中等 batch 每个程序 2 行、1 warp（程序更多），decode 4 行、8 warps，大网格保持通用的 (4, 1)；开 L2 norm 且 ≥ 128 行时 `_prepare` 每个程序 2 行、每行 1 个 warp | 官方形状 1.00–1.24×，开 L2 norm 1.07–1.32×（(64, 64) 1394 → 1157 µs），decode 64 / 256 条序列 1.33× / 1.21× | 输出和最终状态与通用实现逐位相同（7 个 benchmark 形状和 4 个 decode batch，各开 / 关 L2 norm，另加检查脚本 16 例） |
+
+几点细节和教训：
+
+- **每个程序 16 行、4 warps 的切法在 gfx1100 上会算错**：约 0.1% 的输出是完全错的值（如 −1.61e-3 算成 +1.08e-3），每次运行位置都不同；最终状态始终逐位正确，错的只在第 5、13、21…61 个 token（每 8 个一次，对应 `loop_unroll_factor=8` 展开中的同一位置），单步不出错。把行求和 `_sum_rows` 单独拿出来测，16 行配 1–8 warps 都与精确的两两求和逐位一致。像是编译器在这个切法下少了一次 warp 间同步，没有深挖到指令级；规则里不用 16 行（64 行、8 warps 同样出错）。一开始误以为是检查脚本或求和函数的问题。
+- **NaN 的符号位**：benchmark 的 k 是原始 randn、没有 L2 归一化（|k|² ≈ 128），纠错写入会矫枉过正，状态每个 token 放大 3–5 倍，第 63 个 token 时输出已到 1e35–1e38，之后溢出成 inf、inf − inf 得 NaN，(32, 128) 的最终状态 100% 是 NaN（通用实现也一样）。每个程序 2 行的切法与通用的 (4, 1) 在这些 NaN 上只差符号位（通用多为 `0xFFC00000`，2 行为 `0x7FC00000`），位置完全相同；IEEE 不规定 NaN 的符号，取决于编译器选的指令和操作数顺序。大网格改回 (4, 1) 后逐位相同，这些形状上 2 行本来也不更快。
+- **`_prepare` 原先被低估**：分 kernel 计时后它占 23–31%（(64, 64) 254 / 1111 µs）。不开 L2 norm 时主要受写出 3 个 fp32 数组的访存限制，fp64 exp 约占 8–20%；开 L2 norm 时改成每行 1 个 warp，(64, 64) 531 → 299 µs，decode b=256 44.8 → 33.1 µs，64 行以下反而略慢，所以从 128 行起才启用。fp64 除法换成 fp32 正确舍入除法：按双重舍入定理结果逐位相同（4M 行实测一致），但没有提速，没用。
+- **decode 已到拷贝上限**：b=64 时递推 kernel 149 µs，读写同样大小状态（67 MB）的拷贝要 173 µs（`do_bench` 每次先往 256 MB 写零清缓存，这种口径下 67 MB 的拷贝只有约 390 GB/s）。
+- **试过但没用**：`tl.fma(a, b, -0.0)` 改成 `a * b`（能双发射，编译后 VALU 指令少 5–7%），实测 0–3%；循环展开改成 1 / 2 / 4 / 16 次，结果都逐位相同，速度差在 ±3% 内。
+- **router 的下限**：`do_bench` 下一个空 kernel 8.7 µs，两个 11.7 µs；只把 256 个专家的权重读一遍的单 kernel 要 18.2 µs（384 / 512 个专家 22.8 / 27.6 µs）。原先 1–16 个 token 都走 WMMA 加第二个求和 kernel，矩阵乘那个 kernel 19.7 µs，第二个 kernel 多约 4 µs，所以 8 个 token 以内改成单 kernel。
+- **AMD 标量 kernel 的 warp 数有坑**：同一个 kernel 在个别 (token 数, 专家数, warp 数) 上稳定地多出约 10 µs（如 (3, 256) 8 warps 34 µs，邻近配置约 20 µs；(2, 384) 2 / 8 warps 31–39 µs），3 轮、5 轮交替测都复现，原因没查。所以 4 个 token 以内用 GEMV（各形状都平稳），8 warps 只用在 5–8 个 token（实测没有坑）。
+- **剩余空间（没做）**：router 9–16 个 token 把求和 kernel 合进去约省 4 µs（约 1.2×），要跨程序的到达计数和内存栅栏，还要保证多 stream、CUDA graph 下安全；KDA 不开 L2 norm 时让递推直接读 bf16 的 q / k、`_prepare` 只算 decay，再换一个便宜且与 fp64 exp 结果一致的 exp（可穷举 2^32 个输入验证），预估约 10%，只做前半不够，省下的访存会被递推多出的指令抵消；递推再往下要把一行放进少数几个线程，普通 Triton 控制不了寄存器布局（要用 Gluon 之类）。
+- **测量**：11-24 下午 GPU 0–3 被别的容器占用约 20 分钟（每张 19–45 GB），等空闲后才测；这段时间用 `triton.compile` 指定 gfx1100 目标做只编译、不运行的指令分析，不占卡。
+
+数据和脚本在 `perf_batch7/router_kda/`：router 的检查、扫描和计时（`r_check.py`、`r_sweep.log`）、下限与候选方案（`opt_router_gpu.py`、`opt_router_gpu_lib.py`、`opt_router_warps.py`、`opt_router_cand.py`、`opt_router_mid.py` 及输出）、最终计时（`final_router.py`、`final_router_out.txt`）；KDA 的检查和扫描（`k_check.py`、`k_sweep.log`、`k_prof.py`、`k_bits.py`、`k_dbg.py`）、两个问题的复现（`k_explain.py`、`k_explain2.py` 及输出）、指令分析（`k_asm.py`、`k_compile.py`）、`_prepare` 实验（`prep_lib.py`、`opt_prep.py`、`opt_prep_grid.py`、`prep_threshold.py` 及输出）、其他尝试（`opt_kda_gpu.py`、`opt_unroll.py` 及输出）、最终检查和计时（`final_kda.py`、`final_kda_out2.txt`）；单测输出 `final_ut_out2.txt`；PR 描述 `pr_body_b13.md`；rdna3 源码 `src/`（与 #425 相同）。
 
 ## 怎么判断
 

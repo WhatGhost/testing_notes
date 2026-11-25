@@ -1,0 +1,17 @@
+run 0: 1055 wrong outputs, state identical: True, tokens hit 8/64, token 0 hit: False
+run 1: 997 wrong outputs, state identical: True, tokens hit 8/64, token 0 hit: False
+run 2: 984 wrong outputs, state identical: True, tokens hit 8/64, token 0 hit: False
+run 3: 998 wrong outputs, state identical: True, tokens hit 8/64, token 0 hit: False
+run 4: 1026 wrong outputs, state identical: True, tokens hit 8/64, token 0 hit: False
+runs identical to each other: [False, False, False, False]
+  b=0 t=5 h=2 v=7: generic -1.6098e-03  RV=16 +1.0834e-03
+  b=0 t=5 h=4 v=54: generic -1.2939e-02  RV=16 -1.2634e-02
+  b=0 t=5 h=6 v=85: generic +2.5940e-03  RV=16 -1.3245e-02
+  b=0 t=5 h=7 v=37: generic -8.1787e-03  RV=16 +3.6926e-03
+  b=0 t=13 h=0 v=22: generic +5.0659e-03  RV=16 +9.2773e-03
+  b=0 t=13 h=1 v=4: generic -7.0190e-03  RV=16 +2.9175e-02
+
+# follow-up (same inputs, 3 runs): tokens with wrong outputs
+run 0: tokens with wrong outputs [5, 13, 21, 29, 37, 45, 53, 61]
+run 1: tokens with wrong outputs [5, 13, 21, 29, 37, 45, 53, 61]
+run 2: tokens with wrong outputs [5, 13, 21, 29, 37, 45, 53, 61]

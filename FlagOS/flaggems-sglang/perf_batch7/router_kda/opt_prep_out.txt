@@ -1,0 +1,10 @@
+bench (1, 64)            shipped   12.7 | rows/program best   12.4 @(R,warps)=(1, 4) bitwise ok | fp32 exp   10.2 | no exp   10.3 | decay only   12.0
+bench (4, 64)            shipped   25.3 | rows/program best   24.8 @(R,warps)=(1, 4) bitwise ok | fp32 exp   16.9 | no exp   16.7 | decay only   22.0
+bench (16, 64)           shipped   71.0 | rows/program best   68.2 @(R,warps)=(1, 4) bitwise ok | fp32 exp   54.1 | no exp   55.8 | decay only   62.0
+bench (64, 64)           shipped  257.1 | rows/program best  251.9 @(R,warps)=(2, 1) bitwise ok | fp32 exp  231.4 | no exp  233.3 | decay only  212.8
+decode b=64 (L2 norm)    shipped   18.4 | rows/program best   15.0 @(R,warps)=(2, 2) bitwise ok | + fp32 div_rn   15.0 @(2, 2) bitwise ok | fp32 exp   12.0 | no exp   11.9
+decode b=256 (L2 norm)   shipped   44.8 | rows/program best   31.1 @(R,warps)=(2, 2) bitwise ok | + fp32 div_rn   31.0 @(4, 4) bitwise ok | fp32 exp   20.2 | no exp   19.7
+bench (64,64) + L2 norm  shipped  530.2 | rows/program best  295.7 @(R,warps)=(1, 1) bitwise ok | + fp32 div_rn  292.7 @(4, 1) bitwise ok | fp32 exp  242.5 | no exp  242.5
+
+== fp32 div_rn vs fp64 division over 4M random L2-normalized rows ==
+q, k, decay bitwise: [True, True, True] mismatching words: [0, 0, 0]

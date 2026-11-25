@@ -1,0 +1,17 @@
+apply_rotary_emb
+bias_gelu_tanh
+cat_pad_channels_last_3d
+dsv3_router_gemm
+fused_norm_rope_inplace
+fused_qk_complex_rope
+fused_recurrent_kda
+gemma4_fused_routing
+grouped_gemma_rmsnorm
+murmur_hash32
+silu_and_mul_masked_post_per_tensor_quant
+silu_and_mul_masked_post_quant
+silu_mul_dynamic_tensorwise_quant
+silu_mul_static_tensorwise_quant
+timestep_embedding
+top_k_renorm
+wan_rmsnorm_silu
