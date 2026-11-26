@@ -1,0 +1,14 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: grouped_gemm  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS               0.914935            0.080921              11.307          [torch.Size([128, 2048]), torch.Size([8, 512, 2048]), 8, torch.Size([8]), torch.Size([9]), torch.Size([9]), torch.Size([8])]
+SUCCESS               3.408528            0.178801              19.063          [torch.Size([128, 2048]), torch.Size([32, 512, 2048]), 32, torch.Size([32]), torch.Size([33]), torch.Size([33]), torch.Size([32])]
+SUCCESS               1.238241            0.114441              10.820          [torch.Size([1024, 2048]), torch.Size([8, 512, 2048]), 8, torch.Size([8]), torch.Size([9]), torch.Size([9]), torch.Size([15])]
+SUCCESS               3.465057            0.237281              14.603          [torch.Size([1024, 2048]), torch.Size([32, 512, 2048]), 32, torch.Size([32]), torch.Size([33]), torch.Size([33]), torch.Size([39])]
+SUCCESS               3.503337            0.246522              14.211          [torch.Size([4096, 2048]), torch.Size([8, 512, 2048]), 8, torch.Size([8]), torch.Size([9]), torch.Size([9]), torch.Size([39])]
+SUCCESS               4.854583            0.313922              15.464          [torch.Size([4096, 2048]), torch.Size([32, 512, 2048]), 32, torch.Size([32]), torch.Size([33]), torch.Size([33]), torch.Size([63])]
+
+.
+1 passed in 11.21s

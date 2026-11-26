@@ -1,0 +1,11 @@
+== chunk_kda_scaled_dot_kkt (batch, seq, heads, head_dim)
+official (1, 64, 8, 128)           cold generic     14.6 rdna3     14.4 (1.02x) | warm generic     39.6 rdna3     39.8 (0.99x)
+official (1, 256, 8, 128)          cold generic     21.9 rdna3     21.7 (1.01x) | warm generic     40.8 rdna3     40.9 (1.00x)
+official (1, 1024, 8, 128)         cold generic    156.2 rdna3     51.4 (3.04x) | warm generic     91.8 rdna3     46.4 (1.98x)
+official (1, 4096, 8, 128)         cold generic    478.6 rdna3    164.9 (2.90x) | warm generic    262.5 rdna3     86.2 (3.05x)
+extra (1, 512, 8, 128)             cold generic    100.8 rdna3     31.8 (3.17x) | warm generic     78.8 rdna3     46.4 (1.70x)
+extra (2, 256, 8, 128)             cold generic     99.8 rdna3     31.8 (3.14x) | warm generic     78.8 rdna3     44.8 (1.76x)
+extra (1, 2048, 4, 64)             cold generic    227.2 rdna3     35.0 (6.49x) | warm generic    188.9 rdna3     46.6 (4.05x)
+extra (4, 1024, 16, 128)           cold generic    731.9 rdna3    291.5 (2.51x) | warm generic    570.9 rdna3    159.1 (3.59x)
+extra (1, 8192, 32, 128)           cold generic   2186.2 rdna3    848.7 (2.58x) | warm generic   2298.4 rdna3    857.2 (2.68x)
+rc=0

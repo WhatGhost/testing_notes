@@ -1,0 +1,20 @@
+ok   (512,32)                         rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 1.6e-06
+ok   (1024,16)                        rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 2.2e-06
+ok   (1536,16)                        rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 2.2e-06
+ok   (1000,32)                        rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 1.8e-06
+ok   (2048,8) in a (4096,16) buffer   rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 5.3e-07
+FAIL fp16 (generic path, read as bf16) rope exact False, nope mismatch 9.2e-01, padding kept True, codes differing from generic 0.0e+00
+ok   (768,16) at the threshold        rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 3.0e-06
+ok   (767,16) below it (generic)      rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 0.0e+00
+ok   (2047,16) just below 2^24        rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 1.7e-06
+ok   (2048,16) at 2^24 (generic)      rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 0.0e+00
+ok   (4096,16) above (generic)        rope exact True, nope mismatch 0.0e+00, padding kept True, codes differing from generic 0.0e+00
+10/11 pass the unit-test checks
+back-to-back per call at (768,16): generic 41.7 us, rdna3 44.3 us
+== rdna3
+.......................                                                  [100%]
+23 passed in 17.95s
+== none
+.......................                                                  [100%]
+23 passed in 11.09s
+rc=0

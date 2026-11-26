@@ -1,0 +1,4 @@
+grouped_gemm N=512 K=2048: 225 spill-free configs
+grouped_gemm N=1536 K=2048: 225 spill-free configs
+grouped_gemm N=2048 K=768: 225 spill-free configs
+absorbed: 50 spill-free configs

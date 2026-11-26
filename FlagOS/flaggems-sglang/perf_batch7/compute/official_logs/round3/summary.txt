@@ -1,0 +1,8 @@
+== grouped_gemm
+  [torch.Size([128, 2048]), torch.Size([8, 512, 2048]), 8, torch.Size([8]), torch.Size([9]), torch.Size([9]), torch.Size([8])] master     80.88 us  branch     81.04 us   1.00x   (master [80.84, 80.88, 80.96] branch [81.04, 80.92, 81.28])
+  [torch.Size([128, 2048]), torch.Size([32, 512, 2048]), 32, torch.Size([32]), torch.Size([33]), torch.Size([33]), torch.Size([32])] master    178.80 us  branch    178.88 us   1.00x   (master [178.6, 178.8, 178.92] branch [178.88, 178.76, 179.16])
+  [torch.Size([1024, 2048]), torch.Size([8, 512, 2048]), 8, torch.Size([8]), torch.Size([9]), torch.Size([9]), torch.Size([15])] master    146.60 us  branch    114.08 us   1.29x   (master [147.62, 146.28, 146.6] branch [113.62, 114.08, 114.22])
+  [torch.Size([1024, 2048]), torch.Size([32, 512, 2048]), 32, torch.Size([32]), torch.Size([33]), torch.Size([33]), torch.Size([39])] master    269.50 us  branch    216.30 us   1.25x   (master [269.5, 269.88, 269.26] branch [216.2, 217.8, 216.3])
+  [torch.Size([4096, 2048]), torch.Size([8, 512, 2048]), 8, torch.Size([8]), torch.Size([9]), torch.Size([9]), torch.Size([39])] master    317.96 us  branch    246.60 us   1.29x   (master [314.16, 317.96, 319.42] branch [240.14, 246.6, 246.66])
+  [torch.Size([4096, 2048]), torch.Size([32, 512, 2048]), 32, torch.Size([32]), torch.Size([33]), torch.Size([33]), torch.Size([63])] master    456.68 us  branch    314.28 us   1.45x   (master [452.5, 460.04, 456.68] branch [308.52, 314.28, 314.68])
+  geomean speedup 1.200x, range 1.00-1.45x

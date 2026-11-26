@@ -1,0 +1,2 @@
+generic tile_compute: regs 256 spills 361 warps 4 shared 8192
+rdna3 _kkt_kernel: regs 256 spills 0 warps 1 shared 1024

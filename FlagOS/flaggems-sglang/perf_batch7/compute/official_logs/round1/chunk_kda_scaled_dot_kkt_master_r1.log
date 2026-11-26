@@ -1,0 +1,13 @@
+[INFO] : FlagGems Unsupported GPU arch none specialization
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: chunk_kda_scaled_dot_kkt  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS               0.679080            0.014400              47.158          [torch.Size([1, 64, 8, 128]), torch.Size([1, 64, 8, 128]), torch.Size([1, 64, 8, 128]), torch.Size([1, 64, 8]), 0.08838834764831845, 1.0, 64]
+SUCCESS               2.641120            0.022000             120.051          [torch.Size([1, 256, 8, 128]), torch.Size([1, 256, 8, 128]), torch.Size([1, 256, 8, 128]), torch.Size([1, 256, 8]), 0.08838834764831845, 1.0, 64]
+SUCCESS              10.447162            0.155800              67.055          [torch.Size([1, 1024, 8, 128]), torch.Size([1, 1024, 8, 128]), torch.Size([1, 1024, 8, 128]), torch.Size([1, 1024, 8]), 0.08838834764831845, 1.0, 64]
+SUCCESS              41.880896            0.479720              87.303          [torch.Size([1, 4096, 8, 128]), torch.Size([1, 4096, 8, 128]), torch.Size([1, 4096, 8, 128]), torch.Size([1, 4096, 8]), 0.08838834764831845, 1.0, 64]
+
+.
+1 passed in 16.32s

@@ -1,0 +1,30 @@
+== (768,512,2048,32) rows/expert 24: generic cold   269.3 warm   116.9
+   (16, 32, 128, 2, 3)    cold   229.5 (1.17x) warm    99.4 (1.18x) worse-of 1.17x
+   (32, 64, 256, 8, 1)    cold   301.7 (0.89x) warm    75.4 (1.55x) worse-of 0.89x
+   (16, 64, 128, 4, 2)    cold   347.5 (0.77x) warm    99.2 (1.18x) worse-of 0.77x
+   (16, 64, 128, 2, 3)    cold   247.7 (1.09x) warm   103.5 (1.13x) worse-of 1.09x
+   (16, 32, 256, 2, 2)    cold   220.2 (1.22x) warm    77.3 (1.51x) worse-of 1.22x
+   (32, 32, 128, 4, 2)    cold   328.4 (0.82x) warm    81.1 (1.44x) worse-of 0.82x
+   (32, 32, 256, 4, 1)    cold   287.4 (0.94x) warm    74.1 (1.58x) worse-of 0.94x
+   (16, 128, 128, 4, 1)   cold   436.1 (0.62x) warm   108.7 (1.08x) worse-of 0.62x
+   (32, 64, 128, 4, 2)    cold   407.3 (0.66x) warm    94.1 (1.24x) worse-of 0.66x
+   (32, 64, 128, 8, 2)    cold   399.4 (0.67x) warm    87.0 (1.34x) worse-of 0.67x
+   (64, 64, 128, 8, 3)    cold   272.6 (0.99x) warm   116.5 (1.00x) worse-of 0.99x
+   (16, 64, 256, 4, 1)    cold   289.1 (0.93x) warm    83.4 (1.40x) worse-of 0.93x
+   (32, 128, 128, 8, 1)   cold   376.4 (0.72x) warm    84.2 (1.39x) worse-of 0.72x
+   best worse-of: (16, 32, 256, 2, 2) cold 1.22x warm 1.51x
+== (1536,512,2048,32) rows/expert 48: generic cold   309.0 warm   122.8
+   (16, 32, 128, 2, 3)    cold   256.7 (1.20x) warm   153.7 (0.80x) worse-of 0.80x
+   (32, 64, 256, 8, 1)    cold   273.0 (1.13x) warm   125.4 (0.98x) worse-of 0.98x
+   (16, 64, 128, 4, 2)    cold   311.4 (0.99x) warm   137.3 (0.89x) worse-of 0.89x
+   (16, 64, 128, 2, 3)    cold   268.1 (1.15x) warm   159.9 (0.77x) worse-of 0.77x
+   (16, 32, 256, 2, 2)    cold   220.3 (1.40x) warm   126.9 (0.97x) worse-of 0.97x
+   (32, 32, 128, 4, 2)    cold   298.6 (1.04x) warm   123.9 (0.99x) worse-of 0.99x
+   (32, 32, 256, 4, 1)    cold   264.6 (1.17x) warm   122.1 (1.00x) worse-of 1.00x
+   (16, 128, 128, 4, 1)   cold   371.6 (0.83x) warm   132.1 (0.93x) worse-of 0.83x
+   (32, 64, 128, 4, 2)    cold   364.3 (0.85x) warm   129.7 (0.95x) worse-of 0.85x
+   (32, 64, 128, 8, 2)    cold   330.0 (0.94x) warm   126.5 (0.97x) worse-of 0.94x
+   (64, 64, 128, 8, 3)    cold   282.9 (1.09x) warm   118.6 (1.03x) worse-of 1.03x
+   (16, 64, 256, 4, 1)    cold   277.5 (1.11x) warm   127.9 (0.96x) worse-of 0.96x
+   (32, 128, 128, 8, 1)   cold   386.7 (0.80x) warm   133.5 (0.92x) worse-of 0.80x
+   best worse-of: (64, 64, 128, 8, 3) cold 1.09x warm 1.03x

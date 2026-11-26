@@ -1,0 +1,17 @@
+== checks (default config) ==
+ok   (16,8)           nope mismatch 0.00e+00, codes differing from generic 0.00e+00
+ok   (512,16)         nope mismatch 0.00e+00, codes differing from generic 2.76e-06
+ok   (64,8) padded    nope mismatch 0.00e+00, codes differing from generic 0.00e+00
+ok   (1024,16)        nope mismatch 0.00e+00, codes differing from generic 2.23e-06
+ok   (4096,16)        nope mismatch 0.00e+00, codes differing from generic 1.99e-06
+ok   (100,16)         nope mismatch 0.00e+00, codes differing from generic 2.17e-06
+ok   (1000,32)        nope mismatch 0.00e+00, codes differing from generic 1.84e-06
+(  16,16) generic cold   16.7 warm   18.4 | best (32, 64, 64, 4, True) cold   15.6 (1.07x) warm   44.3 (0.41x) | (32, 64, 64, 8, False):15.6 (32, 64, 64, 4, False):15.9 (32, 64, 64, 8, True):16.0
+( 128,16) generic cold   21.0 warm   20.2 | best (64, 128, 64, 8, True) cold   20.8 (1.01x) warm   42.0 (0.48x) | (32, 64, 64, 4, False):20.8 (32, 128, 64, 4, False):20.9 (32, 128, 64, 4, True):21.0
+( 512,16) generic cold   50.2 warm   29.2 | best (64, 64, 64, 4, True) cold   37.5 (1.34x) warm   41.5 (0.70x) | (64, 64, 64, 4, False):38.1 (64, 128, 64, 8, True):38.1 (32, 128, 64, 4, True):38.4
+(1024,16) generic cold  126.0 warm   54.6 | best (64, 128, 64, 8, True) cold   57.8 (2.18x) warm   48.3 (1.13x) | (64, 128, 64, 4, True):57.8 (64, 64, 64, 4, True):58.4 (64, 64, 64, 4, False):59.7
+(4096,16) generic cold  186.6 warm  177.6 | best (64, 128, 64, 4, True) cold  179.9 (1.04x) warm  179.1 (0.99x) | (64, 128, 64, 8, True):182.2 (64, 64, 64, 4, True):184.9 (128, 128, 64, 8, True):186.7
+(  16, 8) generic cold   13.8 warm   17.3 | best (32, 128, 64, 8, False) cold   12.9 (1.07x) warm   40.6 (0.43x) | (32, 64, 64, 4, True):13.0 (32, 64, 64, 4, False):13.0 (32, 64, 64, 8, False):13.0
+(  64, 8) generic cold   15.1 warm   18.4 | best (32, 64, 64, 4, True) cold   13.6 (1.12x) warm   40.5 (0.45x) | (32, 64, 64, 8, False):13.9 (32, 128, 64, 8, True):14.2 (64, 64, 64, 8, True):14.2
+(2048,16) generic cold  105.7 warm   93.0 | best (64, 128, 64, 4, True) cold  100.8 (1.05x) warm   90.1 (1.03x) | (64, 128, 64, 8, True):101.6 (64, 64, 64, 4, True):102.6 (64, 256, 64, 8, True):104.6
+( 256,16) generic cold   29.5 warm   18.8 | best (64, 64, 64, 4, True) cold   26.8 (1.10x) warm   40.7 (0.46x) | (32, 128, 64, 4, True):27.2 (32, 128, 64, 4, False):27.4 (32, 64, 64, 4, True):27.4

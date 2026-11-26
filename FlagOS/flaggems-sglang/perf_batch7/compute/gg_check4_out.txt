@@ -1,0 +1,27 @@
+ok   test (128,256,512,4)                       max err generic 2.0e-03 new 2.0e-03 | outputs off the reference generic 0.02% new 0.02%
+ok   test (1024,512,1024,8)                     max err generic 3.1e-02 new 3.1e-02 | outputs off the reference generic 0.02% new 0.03%
+ok   test (333,256,256,16)                      max err generic 3.9e-03 new 3.9e-03 | outputs off the reference generic 0.01% new 0.01%
+ok   bench (128,512,2048,8)                     max err generic 1.6e-02 new 1.6e-02 | outputs off the reference generic 0.02% new 0.02%
+ok   bench (128,512,2048,32)                    max err generic 1.6e-02 new 1.6e-02 | outputs off the reference generic 0.02% new 0.02%
+ok   bench (1024,512,2048,8)                    max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.04% new 0.03%
+ok   bench (1024,512,2048,32)                   max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.04% new 0.03%
+ok   bench (4096,512,2048,8)                    max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.04% new 0.03%
+ok   bench (4096,512,2048,32)                   max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.04% new 0.03%
+ok   ragged N=200 K=300                         max err generic 1.6e-02 new 1.6e-02 | outputs off the reference generic 0.02% new 0.02%
+ok   many empty experts (600 rows, 256 experts) max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.03% new 0.02%
+ok   head 10 / tail 7 unassigned rows           max err generic 1.6e-02 new 1.6e-02 | outputs off the reference generic 0.03% new 0.02%
+ok   fp16                                       max err generic 7.8e-03 new 7.8e-03 | outputs off the reference generic 0.44% new 0.44%
+ok   single expert                              max err generic 6.2e-02 new 3.1e-02 | outputs off the reference generic 0.04% new 0.03%
+ok   large rows per expert, K=768               max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.02% new 0.02%
+ok   large rows per expert, K=2048              max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.04% new 0.03%
+ok   N=1536 K=2048 E=128                        max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.04% new 0.03%
+ok   N=2048 K=768 E=128                         max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.02% new 0.02%
+ok   512 rows, N=1536 E=128                     max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.03% new 0.03%
+ok   4096 rows, N=512 E=128                     max err generic 6.2e-02 new 6.2e-02 | outputs off the reference generic 0.04% new 0.03%
+20/20 within the unit-test tolerance
+== rdna3
+.........                                                                [100%]
+9 passed in 2.05s
+== none
+.........                                                                [100%]
+9 passed in 2.06s

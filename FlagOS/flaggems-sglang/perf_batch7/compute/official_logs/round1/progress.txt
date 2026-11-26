@@ -1,0 +1,12 @@
+06:37:01 round 1 grouped_gemm master rc=0 GPU 1
+06:37:03 round 1 chunk_kda_scaled_dot_kkt master rc=0 GPU 0
+06:37:23 round 1 grouped_gemm branch rc=0 GPU 1
+06:37:23 round 1 chunk_kda_scaled_dot_kkt branch rc=0 GPU 0
+06:37:38 round 2 chunk_kda_scaled_dot_kkt master rc=0 GPU 0
+06:37:41 round 2 grouped_gemm master rc=0 GPU 1
+06:37:53 round 2 chunk_kda_scaled_dot_kkt branch rc=0 GPU 0
+06:38:01 round 2 grouped_gemm branch rc=0 GPU 1
+06:38:07 round 3 chunk_kda_scaled_dot_kkt master rc=0 GPU 0
+06:38:19 round 3 grouped_gemm master rc=0 GPU 1
+06:38:23 round 3 chunk_kda_scaled_dot_kkt branch rc=0 GPU 0
+06:38:37 round 3 grouped_gemm branch rc=0 GPU 1

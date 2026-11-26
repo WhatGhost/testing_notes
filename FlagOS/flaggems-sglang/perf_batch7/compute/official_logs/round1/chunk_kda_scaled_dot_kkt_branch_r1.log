@@ -1,0 +1,12 @@
+[base-data] 未指定 --base-data，'vs Base' 列关闭。
+
+Operator: chunk_kda_scaled_dot_kkt  Performance Test (dtype=torch.bfloat16, mode=kernel, level=comprehensive)
+Status       Torch Latency (ms)    Gems Latency (ms)         Gems Speedup          Size Detail
+-----------------------------------------------------------------------------------------------
+SUCCESS               0.682401            0.014520              46.997          [torch.Size([1, 64, 8, 128]), torch.Size([1, 64, 8, 128]), torch.Size([1, 64, 8, 128]), torch.Size([1, 64, 8]), 0.08838834764831845, 1.0, 64]
+SUCCESS               2.638324            0.022240             118.630          [torch.Size([1, 256, 8, 128]), torch.Size([1, 256, 8, 128]), torch.Size([1, 256, 8, 128]), torch.Size([1, 256, 8]), 0.08838834764831845, 1.0, 64]
+SUCCESS              10.479934            0.051720             202.628          [torch.Size([1, 1024, 8, 128]), torch.Size([1, 1024, 8, 128]), torch.Size([1, 1024, 8, 128]), torch.Size([1, 1024, 8]), 0.08838834764831845, 1.0, 64]
+SUCCESS              41.892996            0.162400             257.962          [torch.Size([1, 4096, 8, 128]), torch.Size([1, 4096, 8, 128]), torch.Size([1, 4096, 8, 128]), torch.Size([1, 4096, 8]), 0.08838834764831845, 1.0, 64]
+
+.
+1 passed in 12.25s

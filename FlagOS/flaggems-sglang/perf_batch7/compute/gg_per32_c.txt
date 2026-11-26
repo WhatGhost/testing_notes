@@ -1,0 +1,15 @@
+== (512,512,2048,32) rows/expert 16: generic cold   278.3 warm   228.7
+   (16, 32, 128, 2, 3)    cold   246.6 (1.13x) warm    82.3 (2.78x) worse-of 1.13x
+   (32, 64, 256, 8, 1)    cold   294.2 (0.95x) warm    77.4 (2.96x) worse-of 0.95x
+   (16, 64, 128, 4, 2)    cold   367.7 (0.76x) warm    91.4 (2.50x) worse-of 0.76x
+   (16, 64, 128, 2, 3)    cold   266.6 (1.04x) warm    84.2 (2.72x) worse-of 1.04x
+   (16, 32, 256, 2, 2)    cold   232.4 (1.20x) warm    63.5 (3.60x) worse-of 1.20x
+   (32, 32, 128, 4, 2)    cold   375.2 (0.74x) warm    88.5 (2.59x) worse-of 0.74x
+   (32, 32, 256, 4, 1)    cold   283.9 (0.98x) warm    72.8 (3.14x) worse-of 0.98x
+   (16, 128, 128, 4, 1)   cold   452.5 (0.61x) warm   100.6 (2.27x) worse-of 0.61x
+   (32, 64, 128, 4, 2)    cold   539.6 (0.52x) warm   110.9 (2.06x) worse-of 0.52x
+   (32, 64, 128, 8, 2)    cold   426.4 (0.65x) warm    88.1 (2.60x) worse-of 0.65x
+   (64, 64, 128, 8, 3)    cold   274.1 (1.02x) warm   119.5 (1.91x) worse-of 1.02x
+   (16, 64, 256, 4, 1)    cold   290.8 (0.96x) warm    69.4 (3.29x) worse-of 0.96x
+   (32, 128, 128, 8, 1)   cold   369.1 (0.75x) warm    84.6 (2.70x) worse-of 0.75x
+   best worse-of: (16, 32, 256, 2, 2) cold 1.20x warm 3.60x
